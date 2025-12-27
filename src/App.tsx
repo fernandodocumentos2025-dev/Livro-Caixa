@@ -28,6 +28,9 @@ function AppContent() {
       }
 
       try {
+        // Aguardar um pouco para garantir que o Supabase Auth está pronto
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         await checkAndResetIfNewDay();
         const aberto = await hasCaixaAberto();
         console.log('🔍 Verificando caixa aberto:', aberto);

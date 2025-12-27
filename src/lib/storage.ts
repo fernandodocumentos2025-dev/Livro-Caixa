@@ -224,12 +224,21 @@ export async function saveAbertura(abertura: Abertura): Promise<void> {
 
 export async function hasCaixaAberto(): Promise<boolean> {
   try {
+    console.log('📋 hasCaixaAberto: Iniciando verificação...');
     const abertura = await getAberturaHoje();
-    if (!abertura) return false;
+    console.log('📋 hasCaixaAberto: Abertura encontrada?', !!abertura, abertura?.id);
+
+    if (!abertura) {
+      console.log('📋 hasCaixaAberto: Sem abertura → retornando FALSE');
+      return false;
+    }
 
     // Verificar se já existe um fechamento para esta abertura
     const isFechado = await storageService.getFechamentoByAbertura(abertura.id);
-    return !isFechado;
+    console.log('📋 hasCaixaAberto: Já foi fechado?', isFechado);
+    const resultado = !isFechado;
+    console.log('📋 hasCaixaAberto: Resultado final:', resultado);
+    return resultado;
   } catch (error) {
     console.error('Erro em hasCaixaAberto:', error);
     return false;
