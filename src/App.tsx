@@ -22,6 +22,7 @@ function AppContent() {
     async function init() {
       if (authLoading) return;
       if (!user) {
+        setCaixaAberto(false); // Reset state when user logs out
         setLoading(false);
         return;
       }
@@ -29,9 +30,11 @@ function AppContent() {
       try {
         await checkAndResetIfNewDay();
         const aberto = await hasCaixaAberto();
+        console.log('🔍 Verificando caixa aberto:', aberto);
         setCaixaAberto(aberto);
       } catch (error) {
         console.error('Erro ao inicializar:', error);
+        setCaixaAberto(false); // Em caso de erro, força tela de abertura
       } finally {
         setLoading(false);
       }
