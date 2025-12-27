@@ -320,7 +320,7 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
           <p>${formatCurrency(fechamento.totalRetiradas)}</p>
         </div>
         <div class="summary-card" style="border-left: 4px solid #f59e0b;">
-          <h3>Saldo Esperado</h3>
+          <h3>Valor Esperado</h3>
           <p style="color: #f59e0b;">${formatCurrency(fechamento.saldoEsperado)}</p>
         </div>
         <div class="summary-card" style="border-left: 4px solid #8b5cf6;">
@@ -466,8 +466,7 @@ export function generatePDFBlob(fechamento: Fechamento): Blob {
     { title: 'Abertura', value: fechamento.valorAbertura, color: [59, 130, 246] }, // Blue
     { title: 'Vendas', value: fechamento.totalVendas, color: [22, 163, 74] }, // Green
     { title: 'Retiradas', value: fechamento.totalRetiradas, color: [220, 38, 38] }, // Red
-    { title: 'Esperado', value: fechamento.saldoEsperado, color: [202, 138, 4] }, // Yellow
-    { title: 'Esperado', value: fechamento.saldoEsperado, color: [202, 138, 4] }, // Yellow
+    { title: 'Valor Esperado', value: fechamento.saldoEsperado, color: [202, 138, 4] }, // Yellow
     { title: 'Valor Contado', value: fechamento.valorContado, color: [147, 51, 234] }, // Purple
     {
       title: 'Diferença',
