@@ -53,10 +53,18 @@ export default function Auth() {
             setError(error);
           }
         } else {
-          setSuccess('Conta criada com sucesso! Faça login para continuar.');
-          setIsLogin(true);
-          setPassword('');
-          setConfirmPassword('');
+          // Auto-login após criar conta
+          setSuccess('Conta criada com sucesso! Entrando...');
+          setTimeout(async () => {
+            const { error: loginError } = await signIn(email, password);
+            if (loginError) {
+              setError('Conta criada, mas erro ao fazer login. Tente fazer login manualmente.');
+              setIsLogin(true);
+              setPassword('');
+              setConfirmPassword('');
+            }
+            // Se login bem-sucedido, o AuthContext vai redirecionar automaticamente
+          }, 1000);
         }
       }
     } catch (err) {
@@ -143,11 +151,10 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full px-6 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-colors shadow-lg flex items-center justify-center gap-2 ${
-              loading
+            className={`w-full px-6 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-colors shadow-lg flex items-center justify-center gap-2 ${loading
                 ? 'bg-gray-400 cursor-not-allowed text-white'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+              }`}
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
