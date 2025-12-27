@@ -1,0 +1,139 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { getVendasHoje, getRetiradasHoje, checkAndResetIfNewDay } from '../lib/storage';
+import { Venda } from '../types';
+import MonetaryValue from '../components/MonetaryValue';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus } from 'lucide-react';
+
+export default function Dashboard() {
+  const [vendas, setVendas] = useState<Venda[]>([]);
+  const [totalVendas, setTotalVendas] = useState(0);
+  const [totalRetiradas, setTotalRetiradas] = useState(0);
+  const [saldo, setSaldo] = useState(0);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    await checkAndResetIfNewDay();
+    const vendasData = await getVendasHoje();
+    const retiradasData = await getRetiradasHoje();
+
+    const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
+    const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
+
+    setVendas(vendasData);
+    setTotalVendas(totalV);
+    setTotalRetiradas(totalR);
+    setSaldo(totalV - totalR);
+  };
+
+  const ultimasVendas = vendas.slice(-5).reverse();
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600">Resumo do dia atual</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-green-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Total de Vendas</h3>
+            <TrendingUp className="text-green-500" size={20} />
+          </div>
+          <MonetaryValue value={totalVendas} size="xl" className="text-green-600" />
+        </div>
+
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-red-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Total de Retiradas</h3>
+            <TrendingDown className="text-red-500" size={20} />
+          </div>
+          <MonetaryValue value={totalRetiradas} size="xl" className="text-red-600" />
+        </div>
+
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Saldo Atual</h3>
+            <DollarSign className="text-blue-500" size={20} />
+          </div>
+          <MonetaryValue value={saldo} size="xl" className="text-blue-600" />
+        </div>
+
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Transações</h3>
+            <ShoppingBag className="text-yellow-500" size={20} />
+          </div>
+          <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{vendas.length}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">vendas registradas</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Últimas Vendas</h2>
+            <Link
+              to="/vendas"
+              className="text-blue-600 hover:text-blue-700 font-semibold text-xs sm:text-sm flex items-center gap-1"
+            >
+              Ver todas
+            </Link>
+          </div>
+
+          {ultimasVendas.length > 0 ? (
+            <div className="space-y-3">
+              {ultimasVendas.map((venda) => (
+                <div key={venda.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{venda.produto}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {venda.quantidade}x - {venda.formaPagamento} - {venda.hora}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <MonetaryValue value={venda.total} size="md" className="text-green-600" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-sm sm:text-base text-gray-500 mb-4">Nenhuma venda registrada hoje</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Ação Rápida</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <Link
+              to="/vendas"
+              className="flex items-center justify-center gap-2 w-full px-6 py-3 sm:py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 active:bg-green-800 transition-colors text-sm sm:text-base touch-manipulation"
+            >
+              <Plus size={20} />
+              Nova Venda
+            </Link>
+            <Link
+              to="/retiradas"
+              className="flex items-center justify-center gap-2 w-full px-6 py-3 sm:py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 active:bg-red-800 transition-colors text-sm sm:text-base touch-manipulation"
+            >
+              <Plus size={20} />
+              Nova Retirada
+            </Link>
+            <Link
+              to="/fechamento"
+              className="flex items-center justify-center gap-2 w-full px-6 py-3 sm:py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm sm:text-base touch-manipulation"
+            >
+              Fechar Caixa
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
