@@ -302,6 +302,7 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
   <body>
     <div class="container">
       <div class="header">
+        ${localStorage.getItem('empresa_nome') ? `<h2 style="font-size: 24px; font-weight: 500; margin-bottom: 5px; opacity: 0.9;">${localStorage.getItem('empresa_nome')}</h2>` : ''}
         <h1>Fechamento de Caixa</h1>
         <p>${fechamento.data} às ${fechamento.hora}</p>
       </div>
@@ -449,10 +450,20 @@ export function generatePDFBlob(fechamento: Fechamento): Blob {
   doc.rect(0, 0, pageWidth, 40, 'F');
 
   doc.setTextColor(255, 255, 255);
+
+  const empresaNome = localStorage.getItem('empresa_nome');
+  let currentYHeader = 15;
+
+  if (empresaNome) {
+    doc.setFontSize(14);
+    doc.text(empresaNome, pageWidth / 2, currentYHeader, { align: 'center' });
+    currentYHeader += 8;
+  }
+
   doc.setFontSize(22);
-  doc.text('Fechamento de Caixa', pageWidth / 2, 20, { align: 'center' });
+  doc.text('Fechamento de Caixa', pageWidth / 2, currentYHeader + 5, { align: 'center' });
   doc.setFontSize(12);
-  doc.text(`${fechamento.data} às ${fechamento.hora}`, pageWidth / 2, 30, { align: 'center' });
+  doc.text(`${fechamento.data} às ${fechamento.hora}`, pageWidth / 2, currentYHeader + 15, { align: 'center' });
 
   let yPos = 50;
 
@@ -669,8 +680,10 @@ export function downloadPDF(fechamento: Fechamento): void {
 
 export function getWhatsAppText(fechamento: Fechamento): string {
   const totaisPorPagamento = calcularTotaisPorFormaPagamento(fechamento);
-  return `*Fechamento de Caixa - ${fechamento.data}*
+  const empresaNome = localStorage.getItem('empresa_nome');
 
+  return `*Fechamento de Caixa - ${fechamento.data}*
+${empresaNome ? `🏢 *${empresaNome}*\n` : ''}
 🔵 Abertura: ${formatCurrency(fechamento.valorAbertura)}
 💰 Total de Vendas: ${formatCurrency(fechamento.totalVendas)}
 💸 Total de Retiradas: ${formatCurrency(fechamento.totalRetiradas)}

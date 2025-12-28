@@ -39,3 +39,8 @@ export interface Fechamento {
   retiradas: Retirada[];
   status?: 'fechado' | 'reaberto';
 }
+
+export interface UserSettings {
+  userId: string;
+  companyName: string;
+}

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { Venda, Retirada, Fechamento, Abertura } from '../types';
+import { Venda, Retirada, Fechamento, Abertura, UserSettings } from '../types';
 
 async function getUserId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -390,4 +390,44 @@ export async function getFechamentoByAbertura(aberturaId: string): Promise<boole
   }
 
   return !!data;
+}
+
+export async function getUserSettings(): Promise<UserSettings | null> {
+  const userId = await getUserId();
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Erro ao buscar configurações do usuário:', error);
+    return null;
+  }
+
+  if (!data) return null;
+
+  return {
+    userId: data.user_id,
+    companyName: data.company_name || '',
+  };
+}
+
+export async function saveUserSettings(settings: UserSettings): Promise<void> {
+  const userId = await getUserId();
+
+  // Upsert (insert or update) based on user_id
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: userId,
+      company_name: settings.companyName,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+
+  if (error) {
+    console.error('Erro ao salvar configurações do usuário:', error);
+    throw new Error(`Erro ao salvar configurações: ${error.message}`);
+  }
 }
