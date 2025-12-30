@@ -133,6 +133,7 @@ export async function getFechamentos(): Promise<Fechamento[]> {
     return await storageService.getFechamentos();
   } catch (error) {
     console.error('Erro ao buscar fechamentos:', error);
+    alert('Erro ao carregar histórico: ' + (error instanceof Error ? error.message : String(error)));
     return [];
   }
 }

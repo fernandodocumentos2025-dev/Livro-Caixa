@@ -215,7 +215,7 @@ export default function FechamentoCard({ fechamento, onDelete }: FechamentoCardP
             <MonetaryValue value={fechamento.saldoEsperado} size="sm" className="text-yellow-600" />
           </div>
           <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-1">Contado</p>
+            <p className="text-xs text-gray-600 mb-1">Total Apurado</p>
             <MonetaryValue value={fechamento.valorContado} size="sm" className="text-purple-600" />
           </div>
           <div className={`text-center p-3 rounded-lg ${fechamento.diferenca >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
@@ -272,12 +272,47 @@ export default function FechamentoCard({ fechamento, onDelete }: FechamentoCardP
             </div>
 
             <div className="p-4 bg-teal-50 rounded-lg border-l-4 border-teal-500">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <Wallet className="text-teal-600" size={20} />
-                  <span className="text-xs sm:text-sm font-semibold text-gray-700">Saldo em Caixa</span>
+              <div className="flex flex-col gap-3">
+                <div className="border-b border-teal-200 pb-2 mb-1">
+                  <h5 className="text-teal-900 font-bold flex items-center gap-2 mb-2">
+                    <Wallet size={18} />
+                    Conferência do Fechamento
+                  </h5>
+                  <div className="flex justify-between text-sm text-teal-800 mb-1">
+                    <span>Total Digital (Sistema):</span>
+                    <span>{formatCurrency(totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-teal-800">
+                    <span>Dinheiro (Informado):</span>
+                    <span className="font-bold w-full flex justify-end">
+                      {fechamento.detalheEspecie ? (
+                        <div className="flex flex-col items-end gap-1 w-full max-w-[220px]">
+                          <div className="flex justify-between w-full">
+                            <span className="font-normal text-teal-700">Notas:</span>
+                            <span>{formatCurrency(fechamento.detalheEspecie.notas)}</span>
+                          </div>
+                          {fechamento.detalheEspecie.moedas > 0 && (
+                            <div className="flex justify-between w-full">
+                              <span className="font-normal text-teal-700">Moedas:</span>
+                              <span>{formatCurrency(fechamento.detalheEspecie.moedas)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between w-full border-t border-teal-200 mt-1 pt-1">
+                            <span className="font-bold text-xs text-teal-600 uppercase self-center">Total Espécie:</span>
+                            <span className="text-teal-900">{formatCurrency(fechamento.detalheEspecie.notas + fechamento.detalheEspecie.moedas)}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        formatCurrency(fechamento.valorContado - (totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito))
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <MonetaryValue value={fechamento.valorContado} size="sm" className="text-teal-600" />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-700">Total Geral Apurado:</span>
+                  <MonetaryValue value={fechamento.valorContado} size="lg" className="text-teal-700" />
+                </div>
               </div>
             </div>
           </div>

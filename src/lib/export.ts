@@ -325,7 +325,7 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
           <p style="color: #f59e0b;">${formatCurrency(fechamento.saldoEsperado)}</p>
         </div>
         <div class="summary-card" style="border-left: 4px solid #8b5cf6;">
-          <h3>Valor Contado</h3>
+          <h3>Total Apurado</h3>
           <p style="color: #8b5cf6;">${formatCurrency(fechamento.valorContado)}</p>
         </div>
         <div class="summary-card" style="border-left: 4px solid ${fechamento.diferenca >= 0 ? '#10b981' : '#ef4444'};">
@@ -364,14 +364,42 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
             </div>
           </div>
           <div style="padding: 20px; background: #f0fdfa; border-left: 4px solid #14b8a6; border-radius: 8px; margin-bottom: 30px;">
+            <div style="margin-bottom: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 12px;">
+              <h3 style="color: #115e59; margin-bottom: 8px; font-size: 16px;">Conferência do Fechamento</h3>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; color: #134e4a;">
+                 <span>Total Digital (Sistema):</span>
+                 <span>${formatCurrency(totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; color: #134e4a;">
+                 <span>Dinheiro (Informado):</span>
+                 ${fechamento.detalheEspecie ? `
+                 <div style="text-align: right;">
+                    <div>${formatCurrency(fechamento.detalheEspecie.notas)} (Notas)</div>
+                    ${fechamento.detalheEspecie.moedas > 0 ? `<div>${formatCurrency(fechamento.detalheEspecie.moedas)} (Moedas)</div>` : ''}
+                 </div>
+                 ` : `<span style="font-weight: 700;">${formatCurrency(fechamento.valorContado - (totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito))}</span>`}
+              </div>
+            </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 700; color: #1f2937; font-size: 16px;">Saldo em Caixa (Contado)</span>
-              <span style="font-size: 24px; font-weight: 700; color: #14b8a6; word-wrap: break-word; overflow-wrap: break-word;">${formatCurrency(fechamento.valorContado)}</span>
+              <span style="font-weight: 700; color: #1f2937; font-size: 14px;">Total Geral Apurado</span>
+              <span style="font-size: 20px; font-weight: 700; color: #14b8a6; word-wrap: break-word; overflow-wrap: break-word;">${formatCurrency(fechamento.valorContado)}</span>
             </div>
             ${fechamento.diferenca !== 0 ? `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
               <span style="font-weight: 600; color: #64748b; font-size: 14px;">Diferença</span>
               <span style="font-size: 18px; font-weight: 700; color: ${fechamento.diferenca >= 0 ? '#10b981' : '#ef4444'};">${formatCurrency(fechamento.diferenca)}</span>
+            </div>
+            ` : ''}
+
+            ${fechamento.detalheEspecie ? `
+            <div style="margin-top: 15px; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #ccfbf1;">
+               <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 700; color: #134e4a; font-size: 14px;">Dinheiro em Caixa (Total)</span>
+                  <span style="font-size: 16px; font-weight: 700; color: #0d9488;">${formatCurrency(fechamento.detalheEspecie.notas + fechamento.detalheEspecie.moedas)}</span>
+               </div>
+               <div style="text-align: right; font-size: 11px; color: #64748b; margin-top: 4px;">
+                 (Notas + Moedas)
+               </div>
             </div>
             ` : ''}
           </div>
@@ -478,7 +506,7 @@ export function generatePDFBlob(fechamento: Fechamento): Blob {
     { title: 'Vendas', value: fechamento.totalVendas, color: [22, 163, 74] }, // Green
     { title: 'Retiradas', value: fechamento.totalRetiradas, color: [220, 38, 38] }, // Red
     { title: 'Valor Esperado', value: fechamento.saldoEsperado, color: [202, 138, 4] }, // Yellow
-    { title: 'Valor Contado', value: fechamento.valorContado, color: [147, 51, 234] }, // Purple
+    { title: 'Total Apurado', value: fechamento.valorContado, color: [147, 51, 234] }, // Purple
     {
       title: 'Diferença',
       value: fechamento.diferenca,
@@ -551,34 +579,80 @@ export function generatePDFBlob(fechamento: Fechamento): Blob {
 
   doc.setFillColor(240, 253, 250); // Teal 50
   doc.setDrawColor(20, 184, 166); // Teal 500
-  doc.roundedRect(boxX, boxY, boxWidth, 40, 2, 2, 'DF');
+  doc.roundedRect(boxX, boxY, boxWidth, 75, 2, 2, 'DF'); // Increased height to 75
 
-  doc.setTextColor(31, 41, 55);
-  doc.setFontSize(14);
-  doc.text('Saldo em Caixa', boxX + 10, boxY + 15);
+  // Breakdown Text
   doc.setFontSize(10);
-  doc.setTextColor(100, 116, 139);
-  doc.text('(Contado)', boxX + 10, boxY + 22);
+  doc.setTextColor(17, 94, 89); // Teal 900
+  doc.setFont('helvetica', 'normal');
+
+  const digitalTotal = totais.PIX + totais.Crédito + totais.Débito;
+  const cashInformed = fechamento.valorContado - digitalTotal;
+
+  doc.text('Total Digital:', boxX + 10, boxY + 12);
+  doc.text(formatCurrency(digitalTotal), boxX + boxWidth - 10, boxY + 12, { align: 'right' });
+
+  if (fechamento.detalheEspecie) {
+    doc.text('Notas:', boxX + 10, boxY + 18);
+    doc.text(formatCurrency(fechamento.detalheEspecie.notas), boxX + boxWidth - 10, boxY + 18, { align: 'right' });
+
+    if (fechamento.detalheEspecie.moedas > 0) {
+      doc.text('Moedas:', boxX + 10, boxY + 24);
+      doc.text(formatCurrency(fechamento.detalheEspecie.moedas), boxX + boxWidth - 10, boxY + 24, { align: 'right' });
+    }
+  } else {
+    doc.text('Dinheiro Informado:', boxX + 10, boxY + 20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(formatCurrency(cashInformed), boxX + boxWidth - 10, boxY + 20, { align: 'right' });
+  }
+
+  // Divider line
+  doc.setDrawColor(200, 200, 200);
+  doc.line(boxX + 10, boxY + 28, boxX + boxWidth - 10, boxY + 28);
+
+  // Main Total
+  doc.setTextColor(31, 41, 55);
+  doc.setFontSize(11); // Reduced from 12
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Geral Apurado', boxX + 10, boxY + 38);
 
   doc.setTextColor(20, 184, 166);
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text(formatCurrency(fechamento.valorContado), boxX + 10, boxY + 33);
+  doc.setFontSize(16); // Reduced from 18
+  doc.text(formatCurrency(fechamento.valorContado), boxX + 10, boxY + 48);
 
   // Difference inside box if exists
   if (fechamento.diferenca !== 0) {
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(fechamento.diferenca >= 0 ? 22 : 220, fechamento.diferenca >= 0 ? 163 : 38, fechamento.diferenca >= 0 ? 74 : 38);
     const difText = `Diferença: ${formatCurrency(fechamento.diferenca)}`;
-    doc.text(difText, boxX + 10, boxY + 45); // Might need height adjustment if needed
-    // But keeping it simple for now inside the box might be tight, let's just show main value big
+    doc.text(difText, boxX + 10, boxY + 56);
+  }
+
+  // Total Dinheiro em Caixa (Notes + Coins)
+  if (fechamento.detalheEspecie) {
+    const totalEspecie = fechamento.detalheEspecie.notas + fechamento.detalheEspecie.moedas;
+
+    // Draw "Card" background (White with light teal border)
+    doc.setFillColor(255, 255, 255); // White
+    doc.setDrawColor(204, 251, 241); // Teal 100 (matching HTML #ccfbf1)
+    doc.roundedRect(boxX + 5, boxY + 60, boxWidth - 10, 12, 1, 1, 'FD');
+
+    // Text inside card
+    doc.setFontSize(9);
+    doc.setTextColor(19, 78, 74); // Teal 900 (darker for contrast)
+    doc.setFont('helvetica', 'bold');
+    doc.text('Dinheiro em Caixa (Total)', boxX + 10, boxY + 67);
+
+    doc.setTextColor(13, 148, 136); // Teal 600
+    doc.setFontSize(10);
+    doc.text(formatCurrency(totalEspecie), boxX + boxWidth - 10, boxY + 67, { align: 'right' });
   }
 
   yPos = (doc as any).lastAutoTable.finalY + 20;
 
   // Ensure yPos allows for the box if the table was short
-  if (yPos < boxY + 50) {
-    yPos = boxY + 50;
+  if (yPos < boxY + 70) {
+    yPos = boxY + 70;
   }
 
   // Vendas Table
@@ -688,7 +762,7 @@ ${empresaNome ? `🏢 *${empresaNome}*\n` : ''}
 💰 Total de Vendas: ${formatCurrency(fechamento.totalVendas)}
 💸 Total de Retiradas: ${formatCurrency(fechamento.totalRetiradas)}
 📊 Saldo Esperado: ${formatCurrency(fechamento.saldoEsperado)}
-💵 Valor Contado: ${formatCurrency(fechamento.valorContado)}
+💵 Total Apurado: ${formatCurrency(fechamento.valorContado)}
 ${fechamento.diferenca >= 0 ? '✅' : '❌'} Diferença: ${formatCurrency(fechamento.diferenca)}
 
 *Tipos de Pagamento:*

@@ -5,7 +5,7 @@ import { Venda, Retirada, Fechamento as FechamentoType } from '../types';
 import MonetaryValue from '../components/MonetaryValue';
 import { formatCurrency, getCurrentDate, getCurrentTime } from '../utils/formatters';
 import { useMonetaryInput } from '../hooks/useMonetaryInput';
-import { CheckCircle, TrendingUp, TrendingDown, DollarSign, X, Wallet } from 'lucide-react';
+import { CheckCircle, TrendingUp, TrendingDown, DollarSign, X, Wallet, Coins } from 'lucide-react';
 
 interface FechamentoProps {
   onFechamentoConcluido?: () => void;
@@ -22,7 +22,9 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [abertura, setAbertura] = useState<any>(null);
   const navigate = useNavigate();
-  const valorContadoInput = useMonetaryInput(0);
+
+  const valorNotasInput = useMonetaryInput(0);
+  const valorMoedasInput = useMonetaryInput(0);
 
   useEffect(() => {
     loadData();
@@ -68,49 +70,74 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
 
   const handleAbrirModal = () => {
     setShowModal(true);
-    valorContadoInput.reset();
+    valorNotasInput.reset();
+    valorMoedasInput.reset();
   };
 
   const handleFecharModal = () => {
     setShowModal(false);
-    valorContadoInput.reset();
+    valorNotasInput.reset();
+    valorMoedasInput.reset();
   };
 
   const handleConfirmarFechamento = async () => {
-    const valor = valorContadoInput.numericValue;
+    const valorNotas = valorNotasInput.numericValue;
+    const valorMoedas = valorMoedasInput.numericValue;
 
-    if (valor < 0) {
-      alert('Por favor, informe um valor válido');
+    if (valorNotas < 0 || valorMoedas < 0) {
+      alert('Por favor, informe valores válidos');
       return;
+    }
+
+    // Lógica de confirmação se moedas não informado
+    if (valorMoedas === 0 && valorNotas > 0) {
+      const confirmou = window.confirm('Você não informou valor em moedas.\n\nO valor informado em NOTAS representa o TOTAL do caixa (Notas + Moedas)?');
+      if (!confirmou) {
+        return; // Usuario cancelou para preencher moedas
+      }
     }
 
     setIsProcessing(true);
 
-    const diferenca = valor - saldoEsperado;
+    try {
+      const totalDinheiro = valorNotas + valorMoedas;
+      const totalDigital = totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito;
+      const valorTotalFechamento = totalDinheiro + totalDigital;
+      const diferenca = valorTotalFechamento - saldoEsperado;
 
-    const fechamentoId = abertura?.fechamentoOriginalId || crypto.randomUUID();
+      const fechamentoId = abertura?.fechamentoOriginalId || crypto.randomUUID();
 
-    const fechamento: FechamentoType = {
-      id: fechamentoId,
-      data: getCurrentDate(),
-      hora: getCurrentTime(),
-      totalVendas,
-      totalRetiradas,
-      valorAbertura,
-      valorContado: valor,
-      saldoEsperado,
-      diferenca,
-      vendas: [...vendas],
-      retiradas: [...retiradas],
-      status: 'fechado',
-    };
+      const fechamento: FechamentoType = {
+        id: fechamentoId,
+        data: getCurrentDate(),
+        hora: getCurrentTime(),
+        totalVendas,
+        totalRetiradas,
+        valorAbertura,
+        valorContado: valorTotalFechamento,
+        saldoEsperado,
+        diferenca,
+        vendas: [...vendas],
+        retiradas: [...retiradas],
+        status: 'fechado',
+        detalheEspecie: {
+          notas: valorNotas,
+          moedas: valorMoedas
+        }
+      };
 
-    await saveFechamento(fechamento);
-    // Dados mantidos no banco para histórico e auditoria
-
-    onFechamentoConcluido?.();
-    navigate('/historico');
+      await saveFechamento(fechamento);
+      onFechamentoConcluido?.();
+      navigate('/historico');
+    } catch (error) {
+      console.error('Erro ao fechar caixa:', error);
+      setIsProcessing(false);
+      alert('Erro ao salvar fechamento. Provavelmente a coluna "detalhe_especie" não existe no banco de dados.\n\nPor favor, peça ao suporte técnico para rodar o comando SQL de atualização.');
+    }
   };
+
+  const totalDinheiroAtual = valorNotasInput.numericValue + valorMoedasInput.numericValue;
+  const totalGeralPrevisto = totalDinheiroAtual + totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -274,74 +301,154 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Confirmar Fechamento</h2>
               <button
                 onClick={handleFecharModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500 hover:text-gray-700"
               >
                 <X size={24} />
               </button>
             </div>
-            <div className="p-4 sm:p-6">
-              <div className="mb-6">
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Saldo Esperado:</span>
-                    <MonetaryValue value={saldoEsperado} size="md" className="text-blue-600" />
+            <div className="p-4 sm:p-6 space-y-6">
+
+              {/* Passo 1: Conferência de Valores Digitais */}
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h3 className="text-sm font-bold text-blue-900 mb-3 uppercase tracking-wide flex items-center gap-2">
+                  <CheckCircle size={16} className="text-blue-600" />
+                  Valores Digitais (Já Contabilizados)
+                </h3>
+                <div className="space-y-2 text-sm text-blue-800">
+                  <div className="flex justify-between border-b border-blue-200 pb-1">
+                    <span>PIX:</span>
+                    <span className="font-semibold">{formatCurrency(totaisPorPagamento.PIX)}</span>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    (Abertura: {formatCurrency(valorAbertura)} + Vendas: {formatCurrency(totalVendas)} - Retiradas: {formatCurrency(totalRetiradas)})
-                  </p>
+                  <div className="flex justify-between border-b border-blue-200 pb-1">
+                    <span>Crédito:</span>
+                    <span className="font-semibold">{formatCurrency(totaisPorPagamento.Crédito)}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-blue-200 pb-1">
+                    <span>Débito:</span>
+                    <span className="font-semibold">{formatCurrency(totaisPorPagamento.Débito)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 font-bold text-lg">
+                    <span>Total Digital:</span>
+                    <span>{formatCurrency(totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-600 mt-2 bg-blue-100 p-2 rounded">
+                  * Estes valores já estão no sistema e serão somados automaticamente.
+                </p>
+              </div>
+
+              {/* Passo 2: Input de Dinheiro Separado */}
+              <div className="space-y-4">
+
+                {/* Moedas */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
+                      <Coins size={16} />
+                    </div>
+                    Moedas (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={valorMoedasInput.displayValue}
+                    onChange={valorMoedasInput.handleChange}
+                    onFocus={valorMoedasInput.handleFocus}
+                    onBlur={valorMoedasInput.handleBlur}
+                    className="w-full px-4 py-3 text-lg font-mono text-right border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-yellow-100 focus:border-yellow-500 transition-all shadow-sm"
+                    placeholder="0,00"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 pl-1">Se não houver moedas, deixe zerado.</p>
                 </div>
 
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Valor Contado pela Operadora (R$) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={valorContadoInput.displayValue}
-                  onChange={valorContadoInput.handleChange}
-                  onFocus={valorContadoInput.handleFocus}
-                  onBlur={valorContadoInput.handleBlur}
-                  className="w-full px-4 py-3 text-base sm:text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0,00"
-                  required
-                  autoFocus
-                />
-
-                {valorContadoInput.numericValue > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold text-gray-700">Diferença:</span>
-                      <MonetaryValue
-                        value={valorContadoInput.numericValue - saldoEsperado}
-                        size="lg"
-                        className={valorContadoInput.numericValue - saldoEsperado >= 0 ? 'text-green-600' : 'text-red-600'}
-                      />
+                {/* Notas */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                      <DollarSign size={16} />
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {valorContadoInput.numericValue - saldoEsperado > 0 ? 'Sobra de caixa' : valorContadoInput.numericValue - saldoEsperado < 0 ? 'Falta no caixa' : 'Caixa fechado corretamente'}
-                    </p>
+                    Notas
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={valorNotasInput.displayValue}
+                    onChange={valorNotasInput.handleChange}
+                    onFocus={valorNotasInput.handleFocus}
+                    onBlur={valorNotasInput.handleBlur}
+                    className="w-full px-4 py-3 text-xl font-mono text-right border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all shadow-sm"
+                    placeholder="0,00"
+                    autoFocus
+                  />
+                </div>
+
+                {(valorNotasInput.numericValue > 0 || valorMoedasInput.numericValue > 0) && (
+                  <div className="text-right text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded-lg">
+                    Total Espécie: {formatCurrency(totalDinheiroAtual)}
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              {/* Passo 3: Resumo Final e Diferença */}
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                  <span>Total Digital:</span>
+                  <span>{formatCurrency(totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                  <span>+ Dinheiro (Total):</span>
+                  <span>{formatCurrency(totalDinheiroAtual)}</span>
+                </div>
+                <div className="border-t border-gray-300 my-2 pt-2 flex justify-between items-center font-bold text-gray-800">
+                  <span>= Total Geral do Fechamento:</span>
+                  <span>{formatCurrency(totalGeralPrevisto)}</span>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-300">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-semibold text-gray-500">Saldo Esperado pelo Sistema:</span>
+                    <MonetaryValue value={saldoEsperado} size="sm" className="text-gray-500" />
+                  </div>
+                  <div className={`p-4 rounded-lg flex justify-between items-center border ${totalGeralPrevisto - saldoEsperado >= 0
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                    }`}>
+                    <div>
+                      <span className={`text-sm font-bold block ${totalGeralPrevisto - saldoEsperado >= 0
+                        ? 'text-green-700'
+                        : 'text-red-700'
+                        }`}>Diferença Final:</span>
+                      <span className="text-xs text-gray-500">
+                        {totalGeralPrevisto - saldoEsperado >= 0 ? 'Sobra' : 'Falta'}
+                      </span>
+                    </div>
+                    <MonetaryValue
+                      value={totalGeralPrevisto - saldoEsperado}
+                      size="lg"
+                      className={totalGeralPrevisto - saldoEsperado >= 0 ? 'text-green-600' : 'text-red-600'}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   onClick={handleFecharModal}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleConfirmarFechamento}
                   disabled={isProcessing}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors ${isProcessing
+                  className={`flex-1 px-6 py-3 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 ${isProcessing
                     ? 'bg-gray-400 cursor-not-allowed text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-200'
                     }`}
                 >
                   {isProcessing ? 'Processando...' : 'Confirmar Fechamento'}

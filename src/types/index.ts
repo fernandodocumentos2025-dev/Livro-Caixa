@@ -38,6 +38,10 @@ export interface Fechamento {
   vendas: Venda[];
   retiradas: Retirada[];
   status?: 'fechado' | 'reaberto';
+  detalheEspecie?: {
+    notas: number;
+    moedas: number;
+  };
 }
 
 export interface UserSettings {

@@ -259,6 +259,7 @@ export async function saveFechamento(fechamento: Fechamento, aberturaId: string 
     vendas: fechamento.vendas,
     retiradas: fechamento.retiradas,
     status: fechamento.status,
+    detalhe_especie: fechamento.detalheEspecie,
   });
 
   if (error) {
@@ -289,6 +290,7 @@ export async function updateFechamento(id: string, fechamento: Fechamento, abert
       vendas: fechamento.vendas,
       retiradas: fechamento.retiradas,
       status: fechamento.status,
+      detalhe_especie: fechamento.detalheEspecie,
     })
     .eq('id', id)
     .eq('user_id', userId)
@@ -304,6 +306,8 @@ export async function updateFechamento(id: string, fechamento: Fechamento, abert
 
 export async function getFechamentos(): Promise<Fechamento[]> {
   const userId = await getUserId();
+  console.log('🔒 DEBUG: Current User ID:', userId);
+
   const { data: result, error } = await supabase
     .from('fechamentos')
     .select('*')
@@ -339,6 +343,7 @@ export async function getFechamentos(): Promise<Fechamento[]> {
       vendas: f.vendas || [],
       retiradas: f.retiradas || [],
       status: f.status,
+      detalheEspecie: f.detalhe_especie,
     };
   });
 }
