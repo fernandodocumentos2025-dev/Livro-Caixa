@@ -84,7 +84,7 @@ function AppContent() {
           <div className="min-h-screen bg-gray-100">
             <Routes>
               <Route path="/" element={<AberturaCaixa onAberturaCompleta={handleAberturaCompleta} />} />
-              <Route path="/historico" element={<Historico />} />
+              <Route path="/historico" element={<Historico onReabertura={handleAberturaCompleta} />} />
               <Route path="*" element={<AberturaCaixa onAberturaCompleta={handleAberturaCompleta} />} />
             </Routes>
           </div>

@@ -11,9 +11,23 @@ interface FechamentoCardProps {
   fechamento: Fechamento;
   onDelete: (id: string) => void;
   empresaNome?: string;
+  onReabrir?: () => void;
 }
 
-export default function FechamentoCard({ fechamento, onDelete, empresaNome = '' }: FechamentoCardProps) {
+export default function FechamentoCard({ fechamento, onDelete, empresaNome = '', onReabrir }: FechamentoCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const navigate = useNavigate();
+
+  // ... (calcularTotaisPorFormaPagamento code remains same, omitted for brevity if using replace_file_content correctly, but I must match exact target content)
+  // To avoid matching issues, I will target the header and the handleReabrir function separately if possible, or just the top part if I can match enough context.
+  // Actually, I can allow multiple edits? No, tool says "SINGLE CONTIGUOUS block".
+  // I will just update the Interface and the Function signature in one block if they are close.
+  // Lines 10-16 are close.
+  // And lines 47-56 for handleReabrir.
+  // I will use multi_replace for this file since I need to change two separate places (Props definition and Usage).
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -48,6 +62,7 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '' 
     if (window.confirm('Tem certeza que deseja reabrir este caixa? O caixa atual será substituído.')) {
       const sucesso = await reabrirCaixa(fechamento.id);
       if (sucesso) {
+        if (onReabrir) onReabrir();
         navigate('/');
       } else {
         alert('Erro ao reabrir o caixa');

@@ -6,7 +6,11 @@ import { Fechamento } from '../types';
 import FechamentoCard from '../components/FechamentoCard';
 import { History as HistoryIcon, ArrowLeft, Calendar } from 'lucide-react';
 
-export default function Historico() {
+interface HistoricoProps {
+  onReabertura?: () => void;
+}
+
+export default function Historico({ onReabertura }: HistoricoProps) {
   const [fechamentos, setFechamentos] = useState<Fechamento[]>([]);
   const [empresaNome, setEmpresaNome] = useState('');
   const [mesSelecionado, setMesSelecionado] = useState<string>('todos');
@@ -127,6 +131,7 @@ export default function Historico() {
               fechamento={fechamento}
               onDelete={handleDelete}
               empresaNome={empresaNome}
+              onReabrir={onReabertura}
             />
           ))}
         </div>
