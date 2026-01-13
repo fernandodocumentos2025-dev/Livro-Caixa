@@ -58,14 +58,30 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
     }
   };
 
+  const [isReabrindo, setIsReabrindo] = useState(false);
+
   const handleReabrir = async () => {
     if (window.confirm('Tem certeza que deseja reabrir este caixa? O caixa atual será substituído.')) {
-      const sucesso = await reabrirCaixa(fechamento.id);
-      if (sucesso) {
-        if (onReabrir) onReabrir();
-        navigate('/');
-      } else {
-        alert('Erro ao reabrir o caixa');
+      setIsReabrindo(true);
+      try {
+        const sucesso = await reabrirCaixa(fechamento.id);
+        if (sucesso) {
+          if (onReabrir) {
+            await onReabrir(); // Ensure state propagates
+          }
+          // Pequeno delay para garantir que o estado global propagou antes de navegar
+          // Isso evita o "flash" da tela de Abertura
+          setTimeout(() => {
+            navigate('/');
+          }, 100);
+        } else {
+          alert('Erro ao reabrir o caixa');
+        }
+      } catch (error) {
+        console.error('Erro ao reabrir:', error);
+        alert('Erro inesperado ao reabrir caixa');
+      } finally {
+        setIsReabrindo(false);
       }
     }
   };
@@ -176,11 +192,16 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
             {(!fechamento.status || fechamento.status === 'fechado') && (
               <button
                 onClick={handleReabrir}
-                className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors touch-manipulation"
+                disabled={isReabrindo}
+                className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Reabrir Caixa"
                 aria-label="Reabrir Caixa"
               >
-                <RotateCcw size={18} className="sm:w-5 sm:h-5" />
+                {isReabrindo ? (
+                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <RotateCcw size={18} className="sm:w-5 sm:h-5" />
+                )}
               </button>
             )}
 

@@ -270,6 +270,10 @@ export async function getVendasByAbertura(aberturaId: string): Promise<Venda[]> 
   if (isMock) {
     return mockDB.vendas
       .filter(v => v.user_id === userId && v.abertura_id === aberturaId)
+      .sort((a, b) => {
+        if (a.data !== b.data) return a.data.localeCompare(b.data);
+        return a.hora.localeCompare(b.hora);
+      })
       .map(v => {
         const [ano, mes, dia] = v.data.split('-');
         return {
@@ -289,7 +293,9 @@ export async function getVendasByAbertura(aberturaId: string): Promise<Venda[]> 
     .from('vendas')
     .select('*')
     .eq('user_id', userId)
-    .eq('abertura_id', aberturaId);
+    .eq('abertura_id', aberturaId)
+    .order('data', { ascending: true })
+    .order('hora', { ascending: true });
 
   if (error) throw error;
 
@@ -410,6 +416,10 @@ export async function getRetiradasByAbertura(aberturaId: string): Promise<Retira
   if (isMock) {
     return mockDB.retiradas
       .filter(r => r.user_id === userId && r.abertura_id === aberturaId)
+      .sort((a, b) => {
+        if (a.data !== b.data) return a.data.localeCompare(b.data);
+        return a.hora.localeCompare(b.hora);
+      })
       .map(r => {
         const [ano, mes, dia] = r.data.split('-');
         return {
@@ -426,7 +436,9 @@ export async function getRetiradasByAbertura(aberturaId: string): Promise<Retira
     .from('retiradas')
     .select('*')
     .eq('user_id', userId)
-    .eq('abertura_id', aberturaId);
+    .eq('abertura_id', aberturaId)
+    .order('data', { ascending: true })
+    .order('hora', { ascending: true });
 
   if (error) throw error;
 
