@@ -277,10 +277,19 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
       // Basicamente, ao deletar o fechamento, a abertura original (se existir) volta a ser "a última aberta"
       await deleteFechamento(fechamentoId);
 
-      // Verificar se a abertura realmente existe no banco para garantir consistência
-      // Se não existir (foi deletada por algum motivo), precisamos recriá-la com o MESMO ID
-      // Como não temos função para "check exists", tentamos ler
-      // Mas o getUltimaAberturaAberta deve pegá-la agora que deletamos o fechamento.
+      // FORÇAR ATUALIZAÇÃO DO CACHE:
+      // Buscamos explicitamente a abertura que acabamos de "liberar" para garantir que o App a veja imediatamente
+      const aberturaRestaurada = await storageService.getAberturaById(oldAberturaId);
+
+      if (aberturaRestaurada) {
+        console.log('📦 Abertura restaurada com sucesso e carregada no cache:', aberturaRestaurada);
+        aberturaCache = aberturaRestaurada;
+        // Limpar caches de vendas/retiradas para forçar recarregamento
+        vendasCache = [];
+        retiradasCache = [];
+      } else {
+        console.warn('⚠️ Abertura original não encontrada no banco mesmo após remover fechamento.');
+      }
 
       return true;
     } else {

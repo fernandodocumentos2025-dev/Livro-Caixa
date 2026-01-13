@@ -112,6 +112,48 @@ export async function getAberturaHoje(data: string): Promise<Abertura | null> {
   };
 }
 
+export async function getAberturaById(id: string): Promise<Abertura | null> {
+  const userId = await getUserId();
+
+  if (isMock) {
+    const abertura = mockDB.aberturas.find(a => a.id === id && a.user_id === userId);
+
+    if (!abertura) return null;
+
+    const [anoDb, mesDb, diaDb] = abertura.data.split('-');
+    return {
+      id: abertura.id,
+      data: `${diaDb}/${mesDb}/${anoDb}`,
+      hora: abertura.hora.substring(0, 5),
+      valorAbertura: parseFloat(abertura.valor_abertura),
+      fechamentoOriginalId: abertura.fechamento_original_id,
+    };
+  }
+
+  const { data: result, error } = await supabase
+    .from('aberturas')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    console.error('Erro ao buscar abertura por ID:', error);
+    return null;
+  }
+  if (!result) return null;
+
+  const [anoDb, mesDb, diaDb] = result.data.split('-');
+
+  return {
+    id: result.id,
+    data: `${diaDb}/${mesDb}/${anoDb}`,
+    hora: result.hora.substring(0, 5),
+    valorAbertura: parseFloat(result.valor_abertura),
+    fechamentoOriginalId: result.fechamento_original_id,
+  };
+}
+
 export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
   const userId = await getUserId();
 
