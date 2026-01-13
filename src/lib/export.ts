@@ -12,7 +12,7 @@ function calcularTotaisPorFormaPagamento(fechamento: Fechamento) {
   };
 
   fechamento.vendas.forEach((venda) => {
-    if (totais.hasOwnProperty(venda.formaPagamento)) {
+    if (Object.prototype.hasOwnProperty.call(totais, venda.formaPagamento)) {
       totais[venda.formaPagamento as keyof typeof totais] += venda.total;
     }
   });
@@ -648,6 +648,7 @@ export function generatePDFBlob(fechamento: Fechamento, empresaNome: string = ''
     doc.text(formatCurrency(totalEspecie), boxX + boxWidth - 10, boxY + 67, { align: 'right' });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   yPos = (doc as any).lastAutoTable.finalY + 20;
 
   // Ensure yPos allows for the box if the table was short
@@ -678,6 +679,7 @@ export function generatePDFBlob(fechamento: Fechamento, empresaNome: string = ''
     margin: { left: margin, right: margin }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   yPos = (doc as any).lastAutoTable.finalY + 15;
 
   // Retiradas Table
@@ -732,6 +734,7 @@ export async function shareFile(file: File, title: string, text: string): Promis
       });
       return true;
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((error as any).name !== 'AbortError') {
         console.warn('Error sharing file:', error);
       }

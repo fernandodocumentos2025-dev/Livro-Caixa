@@ -58,7 +58,7 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
     };
 
     vendas.forEach((venda) => {
-      if (totais.hasOwnProperty(venda.formaPagamento)) {
+      if (Object.prototype.hasOwnProperty.call(totais, venda.formaPagamento)) {
         totais[venda.formaPagamento as keyof typeof totais] += venda.total;
       }
     });

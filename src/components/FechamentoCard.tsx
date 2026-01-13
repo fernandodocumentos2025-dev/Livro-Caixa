@@ -42,7 +42,7 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
     };
 
     fechamento.vendas.forEach((venda) => {
-      if (totais.hasOwnProperty(venda.formaPagamento)) {
+      if (Object.prototype.hasOwnProperty.call(totais, venda.formaPagamento)) {
         totais[venda.formaPagamento as keyof typeof totais] += venda.total;
       }
     });
@@ -67,7 +67,7 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
         const sucesso = await reabrirCaixa(fechamento.id);
         if (sucesso) {
           if (onReabrir) {
-            await onReabrir();
+            onReabrir();
           }
 
           // FORÇAR RECARREGAMENTO:
