@@ -67,13 +67,14 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
         const sucesso = await reabrirCaixa(fechamento.id);
         if (sucesso) {
           if (onReabrir) {
-            await onReabrir(); // Ensure state propagates
+            await onReabrir();
           }
-          // Pequeno delay para garantir que o estado global propagou antes de navegar
-          // Isso evita o "flash" da tela de Abertura
-          setTimeout(() => {
-            navigate('/');
-          }, 100);
+
+          // FORÇAR RECARREGAMENTO:
+          // Como o estado global às vezes não propaga rápido o suficiente para a navegação SPA,
+          // vamos forçar um reload para garantir que o App reinicie já com o status "Aberto" detectado do banco.
+          // Isso resolve o problema de "ficar na tela de abertura".
+          window.location.href = '/';
         } else {
           alert('Erro ao reabrir o caixa');
         }
