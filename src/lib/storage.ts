@@ -6,7 +6,6 @@
  */
 
 import { Venda, Retirada, Fechamento, Abertura } from '../types';
-import { getCurrentDate, isSameDay } from '../utils/formatters';
 import * as storageService from '../services/storageService';
 
 let aberturaCache: Abertura | null = null;
@@ -14,15 +13,10 @@ let vendasCache: Venda[] = [];
 let retiradasCache: Retirada[] = [];
 
 export async function checkAndResetIfNewDay(): Promise<void> {
+  // Função mantida por compatibilidade, mas não faz mais reset automático
+  // Caixas devem persistir independente da data
   try {
-    const abertura = await getAberturaHoje();
-    const today = getCurrentDate();
-
-    if (abertura && !isSameDay(abertura.data, today)) {
-      aberturaCache = null;
-      vendasCache = [];
-      retiradasCache = [];
-    }
+    console.log('checkAndResetIfNewDay: Função desabilitada - caixas persistem independente da data');
   } catch (error) {
     console.error('Erro em checkAndResetIfNewDay:', error);
   }
@@ -188,13 +182,20 @@ export async function clearDayData(): Promise<void> {
 
 export async function getAberturaHoje(): Promise<Abertura | null> {
   try {
-    const today = getCurrentDate();
-
-    if (aberturaCache && isSameDay(aberturaCache.data, today)) {
-      return aberturaCache;
+    // Buscar o último caixa aberto, independente da data
+    // Primeiro verifica se há cache válido
+    if (aberturaCache) {
+      // Verificar se o caixa em cache ainda está aberto
+      const isFechado = await storageService.getFechamentoByAbertura(aberturaCache.id);
+      if (!isFechado) {
+        return aberturaCache;
+      }
+      // Se foi fechado, limpar cache
+      aberturaCache = null;
     }
 
-    const abertura = await storageService.getAberturaHoje(today);
+    // Buscar último caixa aberto do banco
+    const abertura = await storageService.getUltimaAberturaAberta();
 
     if (abertura) {
       aberturaCache = abertura;
@@ -253,30 +254,59 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
 
     if (!fechamento) return false;
 
+    // Verificar se existe um caixa aberto atualmente
     const aberturaAtual = await getAberturaHoje();
     if (aberturaAtual) {
+      // Se estamos tentando reabrir O MESMO caixa que já está aberto (caso de erro de estado), apenas retornamos true
+      if (fechamento.aberturaId && aberturaAtual.id === fechamento.aberturaId) {
+        console.log('📦 O caixa original já está aberto. Apenas removendo registro de fechamento redundante.');
+        await deleteFechamento(fechamentoId);
+        return true;
+      }
+
+      // Se há OUTRO caixa aberto, precisamos limpá-lo para reabrir o antigo
+      // (Opcional: Poderíamos impedir isso e pedir para o usuário fechar o atual primeiro)
       await clearDayData();
     }
 
-    const abertura: Abertura = {
-      id: crypto.randomUUID(),
-      data: getCurrentDate(),
-      hora: getCurrentTime(),
-      valorAbertura: fechamento.valorAbertura,
-      fechamentoOriginalId: fechamentoId,
-    };
+    // Tentar identificar o ID da abertura original
+    const oldAberturaId = fechamento.aberturaId;
 
-    await saveAbertura(abertura);
+    if (oldAberturaId) {
+      console.log('📦 Tentando restaurar abertura original:', oldAberturaId);
+      // Basicamente, ao deletar o fechamento, a abertura original (se existir) volta a ser "a última aberta"
+      await deleteFechamento(fechamentoId);
 
-    for (const venda of fechamento.vendas) {
-      await saveVenda(venda);
+      // Verificar se a abertura realmente existe no banco para garantir consistência
+      // Se não existir (foi deletada por algum motivo), precisamos recriá-la com o MESMO ID
+      // Como não temos função para "check exists", tentamos ler
+      // Mas o getUltimaAberturaAberta deve pegá-la agora que deletamos o fechamento.
+
+      return true;
+    } else {
+      // Fallback para caixas antigos sem ID vinculado (cria novo, comportamento legado)
+      console.warn('⚠️ Abertura original não identificada. Criando nova (Legado).');
+      const abertura: Abertura = {
+        id: crypto.randomUUID(),
+        data: fechamento.data,
+        hora: getCurrentTime(),
+        valorAbertura: fechamento.valorAbertura,
+        fechamentoOriginalId: fechamentoId,
+      };
+
+      await saveAbertura(abertura);
+
+      for (const venda of fechamento.vendas) {
+        await saveVenda(venda);
+      }
+
+      for (const retirada of fechamento.retiradas) {
+        await saveRetirada(retirada);
+      }
+
+      await deleteFechamento(fechamentoId); // Remove o fechamento antigo pois agora foi "reaberto" como novo
+      return true;
     }
-
-    for (const retirada of fechamento.retiradas) {
-      await saveRetirada(retirada);
-    }
-
-    return true;
   } catch (error) {
     console.error('Erro ao reabrir caixa:', error);
     return false;

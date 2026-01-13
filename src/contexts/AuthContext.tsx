@@ -16,6 +16,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const isMock = !import.meta.env.VITE_SUPABASE_URL;
+
+    if (isMock) {
+      console.log('⚠️ Modo Mock Ativado: Usando usuário de teste.');
+      setUser({
+        id: 'mock-user-id',
+        email: 'teste@exemplo.com',
+        created_at: new Date().toISOString()
+      });
+      setLoading(false);
+      return;
+    }
+
     authService.getCurrentUser().then((currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -30,11 +43,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string) => {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      return { error: null };
+    }
     const response = await authService.signUp(email, password);
     return { error: response.error };
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      setUser({
+        id: 'mock-user-id',
+        email: email,
+        created_at: new Date().toISOString()
+      });
+      return { error: null };
+    }
+
     const response = await authService.signIn(email, password);
     if (response.user) {
       setUser(response.user);
@@ -43,7 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      setUser(null);
+      localStorage.removeItem('empresa_nome');
+      return;
+    }
     await authService.signOut();
+    localStorage.removeItem('empresa_nome');
     setUser(null);
   };
 

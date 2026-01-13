@@ -1,18 +1,32 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFechamentos, deleteFechamento } from '../lib/storage';
+import { getUserSettings } from '../services/storageService';
 import { Fechamento } from '../types';
 import FechamentoCard from '../components/FechamentoCard';
 import { History as HistoryIcon, ArrowLeft, Calendar } from 'lucide-react';
 
 export default function Historico() {
   const [fechamentos, setFechamentos] = useState<Fechamento[]>([]);
+  const [empresaNome, setEmpresaNome] = useState('');
   const [mesSelecionado, setMesSelecionado] = useState<string>('todos');
   const navigate = useNavigate();
 
   useEffect(() => {
     loadFechamentos();
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settings = await getUserSettings();
+      if (settings?.companyName) {
+        setEmpresaNome(settings.companyName);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+    }
+  };
 
   const loadFechamentos = async () => {
     setFechamentos(await getFechamentos());
@@ -108,7 +122,12 @@ export default function Historico() {
       {fechamentosFiltrados.length > 0 ? (
         <div className="space-y-6">
           {fechamentosFiltrados.map((fechamento) => (
-            <FechamentoCard key={fechamento.id} fechamento={fechamento} onDelete={handleDelete} />
+            <FechamentoCard
+              key={fechamento.id}
+              fechamento={fechamento}
+              onDelete={handleDelete}
+              empresaNome={empresaNome}
+            />
           ))}
         </div>
       ) : fechamentos.length > 0 ? (

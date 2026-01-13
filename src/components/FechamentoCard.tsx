@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Fechamento } from '../types';
 import MonetaryValue from './MonetaryValue';
 import { formatCurrency } from '../utils/formatters';
@@ -9,12 +10,14 @@ import { reabrirCaixa } from '../lib/storage';
 interface FechamentoCardProps {
   fechamento: Fechamento;
   onDelete: (id: string) => void;
+  empresaNome?: string;
 }
 
-export default function FechamentoCard({ fechamento, onDelete }: FechamentoCardProps) {
+export default function FechamentoCard({ fechamento, onDelete, empresaNome = '' }: FechamentoCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const navigate = useNavigate();
 
   const calcularTotaisPorFormaPagamento = () => {
     const totais = {
@@ -45,7 +48,7 @@ export default function FechamentoCard({ fechamento, onDelete }: FechamentoCardP
     if (window.confirm('Tem certeza que deseja reabrir este caixa? O caixa atual será substituído.')) {
       const sucesso = await reabrirCaixa(fechamento.id);
       if (sucesso) {
-        window.location.href = '/';
+        navigate('/');
       } else {
         alert('Erro ao reabrir o caixa');
       }
@@ -61,9 +64,9 @@ export default function FechamentoCard({ fechamento, onDelete }: FechamentoCardP
       let blob: Blob;
 
       if (format === 'pdf') {
-        blob = generatePDFBlob(fechamento);
+        blob = generatePDFBlob(fechamento, empresaNome);
       } else {
-        blob = generateHTMLBlob(fechamento);
+        blob = generateHTMLBlob(fechamento, empresaNome);
       }
 
       if (modalMode === 'download') {

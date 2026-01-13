@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getVendasHoje, getRetiradasHoje, checkAndResetIfNewDay } from '../lib/storage';
+import { useAuth } from '../contexts/AuthContext';
 import { Venda } from '../types';
 import MonetaryValue from '../components/MonetaryValue';
 import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus } from 'lucide-react';
@@ -11,22 +12,35 @@ export default function Dashboard() {
   const [totalRetiradas, setTotalRetiradas] = useState(0);
   const [saldo, setSaldo] = useState(0);
 
+  const { user } = useAuth(); // Dependência do AuthContext
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
-    await checkAndResetIfNewDay();
-    const vendasData = await getVendasHoje();
-    const retiradasData = await getRetiradasHoje();
+    try {
+      await checkAndResetIfNewDay();
+      const vendasData = await getVendasHoje();
+      const retiradasData = await getRetiradasHoje();
 
-    const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
-    const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
+      const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
+      const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
 
-    setVendas(vendasData);
-    setTotalVendas(totalV);
-    setTotalRetiradas(totalR);
-    setSaldo(totalV - totalR);
+      setVendas(vendasData);
+      setTotalVendas(totalV);
+      setTotalRetiradas(totalR);
+      setSaldo(totalV - totalR);
+    } catch (error) {
+      console.error('Erro ao carregar dados, usando mock de segurança:', error);
+      // Mock de segurança para evitar tela branca
+      setVendas([]);
+      setTotalVendas(0);
+      setTotalRetiradas(0);
+      setSaldo(0);
+    }
   };
 
   const ultimasVendas = vendas.slice(-5).reverse();

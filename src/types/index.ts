@@ -27,6 +27,7 @@ export interface Abertura {
 
 export interface Fechamento {
   id: string;
+  aberturaId?: string;
   data: string;
   hora: string;
   totalVendas: number;

@@ -20,7 +20,7 @@ function calcularTotaisPorFormaPagamento(fechamento: Fechamento) {
   return totais;
 }
 
-export function generateFechamentoHTML(fechamento: Fechamento): string {
+export function generateFechamentoHTML(fechamento: Fechamento, empresaNome: string = ''): string {
   const totaisPorPagamento = calcularTotaisPorFormaPagamento(fechamento);
 
   const vendasRows = fechamento.vendas
@@ -302,7 +302,7 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
   <body>
     <div class="container">
       <div class="header">
-        ${localStorage.getItem('empresa_nome') ? `<h2 style="font-size: 24px; font-weight: 500; margin-bottom: 5px; opacity: 0.9;">${localStorage.getItem('empresa_nome')}</h2>` : ''}
+        ${empresaNome ? `<h2 style="font-size: 24px; font-weight: 500; margin-bottom: 5px; opacity: 0.9;">${empresaNome}</h2>` : ''}
         <h1>Fechamento de Caixa</h1>
         <p>${fechamento.data} às ${fechamento.hora}</p>
       </div>
@@ -464,12 +464,12 @@ export function generateFechamentoHTML(fechamento: Fechamento): string {
 }
 
 // Generate Blob functions
-export function generateHTMLBlob(fechamento: Fechamento): Blob {
-  const html = generateFechamentoHTML(fechamento);
+export function generateHTMLBlob(fechamento: Fechamento, empresaNome: string = ''): Blob {
+  const html = generateFechamentoHTML(fechamento, empresaNome);
   return new Blob([html], { type: 'text/html' });
 }
 
-export function generatePDFBlob(fechamento: Fechamento): Blob {
+export function generatePDFBlob(fechamento: Fechamento, empresaNome: string = ''): Blob {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
 
@@ -479,7 +479,7 @@ export function generatePDFBlob(fechamento: Fechamento): Blob {
 
   doc.setTextColor(255, 255, 255);
 
-  const empresaNome = localStorage.getItem('empresa_nome');
+  // const empresaNome = localStorage.getItem('empresa_nome'); // Removed local storage dependency
   let currentYHeader = 15;
 
   if (empresaNome) {
@@ -742,19 +742,19 @@ export async function shareFile(file: File, title: string, text: string): Promis
 }
 
 // Backward compatibility / Direct actions
-export function downloadHTML(fechamento: Fechamento): void {
-  const blob = generateHTMLBlob(fechamento);
+export function downloadHTML(fechamento: Fechamento, empresaNome: string = ''): void {
+  const blob = generateHTMLBlob(fechamento, empresaNome);
   saveBlob(blob, `fechamento-${fechamento.data.replace(/\//g, '-')}.html`);
 }
 
-export function downloadPDF(fechamento: Fechamento): void {
-  const blob = generatePDFBlob(fechamento);
+export function downloadPDF(fechamento: Fechamento, empresaNome: string = ''): void {
+  const blob = generatePDFBlob(fechamento, empresaNome);
   saveBlob(blob, `fechamento-${fechamento.data.replace(/\//g, '-')}.pdf`);
 }
 
-export function getWhatsAppText(fechamento: Fechamento): string {
+export function getWhatsAppText(fechamento: Fechamento, empresaNome: string = ''): string {
   const totaisPorPagamento = calcularTotaisPorFormaPagamento(fechamento);
-  const empresaNome = localStorage.getItem('empresa_nome');
+  // const empresaNome = localStorage.getItem('empresa_nome'); // Removed local storage dependency
 
   return `*Fechamento de Caixa - ${fechamento.data}*
 ${empresaNome ? `🏢 *${empresaNome}*\n` : ''}
@@ -777,8 +777,8 @@ ${fechamento.vendas.length} vendas registradas
 ${fechamento.retiradas.length} retiradas registradas`;
 }
 
-export async function shareViaWhatsApp(fechamento: Fechamento): Promise<void> {
-  const text = getWhatsAppText(fechamento);
+export async function shareViaWhatsApp(fechamento: Fechamento, empresaNome: string = ''): Promise<void> {
+  const text = getWhatsAppText(fechamento, empresaNome);
   const encodedText = encodeURIComponent(text);
 
   // Detectar Mobile vs Desktop de forma mais robusta

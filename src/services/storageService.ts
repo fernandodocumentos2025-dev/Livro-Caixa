@@ -1,7 +1,19 @@
 import { supabase } from '../lib/supabaseClient';
 import { Venda, Retirada, Fechamento, Abertura, UserSettings } from '../types';
 
+const isMock = !import.meta.env.VITE_SUPABASE_URL;
+
+// Banco de dados em memória para Modo MOCK
+const mockDB = {
+  aberturas: [] as any[],
+  vendas: [] as any[],
+  retiradas: [] as any[],
+  fechamentos: [] as any[],
+  user_settings: [] as any[]
+};
+
 async function getUserId(): Promise<string> {
+  if (isMock) return 'mock-user-id';
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
   return user.id;
@@ -13,6 +25,19 @@ export async function saveAbertura(abertura: Abertura): Promise<void> {
   // Converter data de DD/MM/YYYY para YYYY-MM-DD
   const [dia, mes, ano] = abertura.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
+
+  if (isMock) {
+    mockDB.aberturas.push({
+      id: abertura.id,
+      user_id: userId,
+      data: dataFormatada,
+      hora: abertura.hora,
+      valor_abertura: abertura.valorAbertura,
+      fechamento_original_id: abertura.fechamentoOriginalId || null,
+    });
+    console.log('📦 MOCK: Abertura salva', abertura);
+    return;
+  }
 
   const { error } = await supabase.from('aberturas').insert({
     id: abertura.id,
@@ -42,6 +67,23 @@ export async function getAberturaHoje(data: string): Promise<Abertura | null> {
   const [dia, mes, ano] = data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
 
+  if (isMock) {
+    const abertura = mockDB.aberturas
+      .filter(a => a.user_id === userId && a.data === dataFormatada)
+      .sort((a, b) => b.hora.localeCompare(a.hora))[0];
+
+    if (!abertura) return null;
+
+    const [anoDb, mesDb, diaDb] = abertura.data.split('-');
+    return {
+      id: abertura.id,
+      data: `${diaDb}/${mesDb}/${anoDb}`,
+      hora: abertura.hora.substring(0, 5),
+      valorAbertura: parseFloat(abertura.valor_abertura),
+      fechamentoOriginalId: abertura.fechamentoOriginalId,
+    };
+  }
+
   const { data: result, error } = await supabase
     .from('aberturas')
     .select('*')
@@ -70,12 +112,96 @@ export async function getAberturaHoje(data: string): Promise<Abertura | null> {
   };
 }
 
+export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
+  const userId = await getUserId();
+
+  if (isMock) {
+    // Retorna a última abertura que não tem fechamento correspondente
+    const aberturasUsuario = mockDB.aberturas
+      .filter(a => a.user_id === userId)
+      .sort((a, b) => b.data.localeCompare(a.data) || b.hora.localeCompare(a.hora));
+
+    for (const abertura of aberturasUsuario) {
+      const fechado = mockDB.fechamentos.some(f => f.abertura_id === abertura.id);
+      if (!fechado) {
+        const [anoDb, mesDb, diaDb] = abertura.data.split('-');
+        return {
+          id: abertura.id,
+          data: `${diaDb}/${mesDb}/${anoDb}`,
+          hora: abertura.hora.substring(0, 5),
+          valorAbertura: parseFloat(abertura.valor_abertura),
+          fechamentoOriginalId: abertura.fechamento_original_id,
+        };
+      }
+    }
+    return null;
+  }
+
+  // Buscar todas as aberturas ordenadas por data e hora (mais recente primeiro)
+  const { data: aberturas, error } = await supabase
+    .from('aberturas')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data', { ascending: false })
+    .order('hora', { ascending: false });
+
+  if (error) throw error;
+  if (!aberturas || aberturas.length === 0) return null;
+
+  // Verificar cada abertura para encontrar a primeira que não tem fechamento
+  for (const abertura of aberturas) {
+    const { data: fechamento } = await supabase
+      .from('fechamentos')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('abertura_id', abertura.id)
+      .maybeSingle();
+
+    // Se não tem fechamento, esta é a abertura aberta
+    if (!fechamento) {
+      // Converter data de YYYY-MM-DD para DD/MM/YYYY
+      const [anoDb, mesDb, diaDb] = abertura.data.split('-');
+      const dataOriginal = `${diaDb}/${mesDb}/${anoDb}`;
+
+      // Converter hora de HH:MM:SS para HH:MM
+      const horaFormatada = abertura.hora.substring(0, 5);
+
+      return {
+        id: abertura.id,
+        data: dataOriginal,
+        hora: horaFormatada,
+        valorAbertura: parseFloat(abertura.valor_abertura),
+        fechamentoOriginalId: abertura.fechamento_original_id,
+      };
+    }
+  }
+
+  return null;
+}
+
+
 export async function saveVenda(venda: Venda, aberturaId: string): Promise<void> {
   const userId = await getUserId();
 
   // Converter data de DD/MM/YYYY para YYYY-MM-DD
   const [dia, mes, ano] = venda.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
+
+  if (isMock) {
+    mockDB.vendas.push({
+      id: venda.id,
+      user_id: userId,
+      abertura_id: aberturaId,
+      produto: venda.produto,
+      quantidade: Math.floor(venda.quantidade),
+      preco_unitario: venda.precoUnitario,
+      total: venda.total,
+      forma_pagamento: venda.formaPagamento,
+      hora: venda.hora,
+      data: dataFormatada,
+    });
+    return;
+  }
 
   const { error } = await supabase.from('vendas').insert({
     id: venda.id,
@@ -98,6 +224,25 @@ export async function saveVenda(venda: Venda, aberturaId: string): Promise<void>
 
 export async function getVendasByAbertura(aberturaId: string): Promise<Venda[]> {
   const userId = await getUserId();
+
+  if (isMock) {
+    return mockDB.vendas
+      .filter(v => v.user_id === userId && v.abertura_id === aberturaId)
+      .map(v => {
+        const [ano, mes, dia] = v.data.split('-');
+        return {
+          id: v.id,
+          produto: v.produto,
+          quantidade: v.quantidade,
+          precoUnitario: v.preco_unitario,
+          total: v.total,
+          formaPagamento: v.forma_pagamento,
+          hora: v.hora.substring(0, 5),
+          data: `${dia}/${mes}/${ano}`,
+        };
+      });
+  }
+
   const { data: result, error } = await supabase
     .from('vendas')
     .select('*')
@@ -134,6 +279,23 @@ export async function updateVenda(id: string, updatedVenda: Venda): Promise<void
   const [dia, mes, ano] = updatedVenda.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
 
+  if (isMock) {
+    const index = mockDB.vendas.findIndex(v => v.id === id && v.user_id === userId);
+    if (index !== -1) {
+      mockDB.vendas[index] = {
+        ...mockDB.vendas[index],
+        produto: updatedVenda.produto,
+        quantidade: Math.floor(updatedVenda.quantidade),
+        preco_unitario: updatedVenda.precoUnitario,
+        total: updatedVenda.total,
+        forma_pagamento: updatedVenda.formaPagamento,
+        hora: updatedVenda.hora,
+        data: dataFormatada,
+      };
+    }
+    return;
+  }
+
   await supabase
     .from('vendas')
     .update({
@@ -151,6 +313,12 @@ export async function updateVenda(id: string, updatedVenda: Venda): Promise<void
 
 export async function deleteVenda(id: string): Promise<void> {
   const userId = await getUserId();
+
+  if (isMock) {
+    mockDB.vendas = mockDB.vendas.filter(v => !(v.id === id && v.user_id === userId));
+    return;
+  }
+
   await supabase
     .from('vendas')
     .delete()
@@ -164,6 +332,19 @@ export async function saveRetirada(retirada: Retirada, aberturaId: string): Prom
   // Converter data de DD/MM/YYYY para YYYY-MM-DD
   const [dia, mes, ano] = retirada.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
+
+  if (isMock) {
+    mockDB.retiradas.push({
+      id: retirada.id,
+      user_id: userId,
+      abertura_id: aberturaId,
+      descricao: retirada.descricao,
+      valor: retirada.valor,
+      hora: retirada.hora,
+      data: dataFormatada,
+    });
+    return;
+  }
 
   const { error } = await supabase.from('retiradas').insert({
     id: retirada.id,
@@ -183,6 +364,22 @@ export async function saveRetirada(retirada: Retirada, aberturaId: string): Prom
 
 export async function getRetiradasByAbertura(aberturaId: string): Promise<Retirada[]> {
   const userId = await getUserId();
+
+  if (isMock) {
+    return mockDB.retiradas
+      .filter(r => r.user_id === userId && r.abertura_id === aberturaId)
+      .map(r => {
+        const [ano, mes, dia] = r.data.split('-');
+        return {
+          id: r.id,
+          descricao: r.descricao,
+          valor: parseFloat(r.valor),
+          hora: r.hora.substring(0, 5),
+          data: `${dia}/${mes}/${ano}`,
+        };
+      });
+  }
+
   const { data: result, error } = await supabase
     .from('retiradas')
     .select('*')
@@ -216,6 +413,20 @@ export async function updateRetirada(id: string, updatedRetirada: Retirada): Pro
   const [dia, mes, ano] = updatedRetirada.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
 
+  if (isMock) {
+    const index = mockDB.retiradas.findIndex(r => r.id === id && r.user_id === userId);
+    if (index !== -1) {
+      mockDB.retiradas[index] = {
+        ...mockDB.retiradas[index],
+        descricao: updatedRetirada.descricao,
+        valor: updatedRetirada.valor,
+        hora: updatedRetirada.hora,
+        data: dataFormatada,
+      };
+    }
+    return;
+  }
+
   await supabase
     .from('retiradas')
     .update({
@@ -230,6 +441,12 @@ export async function updateRetirada(id: string, updatedRetirada: Retirada): Pro
 
 export async function deleteRetirada(id: string): Promise<void> {
   const userId = await getUserId();
+
+  if (isMock) {
+    mockDB.retiradas = mockDB.retiradas.filter(r => !(r.id === id && r.user_id === userId));
+    return;
+  }
+
   await supabase
     .from('retiradas')
     .delete()
@@ -243,6 +460,27 @@ export async function saveFechamento(fechamento: Fechamento, aberturaId: string 
   // Converter data de DD/MM/YYYY para YYYY-MM-DD
   const [dia, mes, ano] = fechamento.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
+
+  if (isMock) {
+    mockDB.fechamentos.push({
+      id: fechamento.id,
+      user_id: userId,
+      abertura_id: aberturaId,
+      data: dataFormatada,
+      hora: fechamento.hora,
+      total_vendas: fechamento.totalVendas,
+      total_retiradas: fechamento.totalRetiradas,
+      valor_abertura: fechamento.valorAbertura,
+      valor_contado: fechamento.valorContado,
+      saldo_esperado: fechamento.saldoEsperado,
+      diferenca: fechamento.diferenca,
+      vendas: fechamento.vendas,
+      retiradas: fechamento.retiradas,
+      status: fechamento.status,
+      detalhe_especie: fechamento.detalheEspecie,
+    });
+    return;
+  }
 
   const { error } = await supabase.from('fechamentos').insert({
     id: fechamento.id,
@@ -274,6 +512,31 @@ export async function updateFechamento(id: string, fechamento: Fechamento, abert
   // Converter data de DD/MM/YYYY para YYYY-MM-DD
   const [dia, mes, ano] = fechamento.data.split('/');
   const dataFormatada = `${ano}-${mes}-${dia}`;
+
+  if (isMock) {
+    const index = mockDB.fechamentos.findIndex(f => f.id === id && f.user_id === userId);
+    if (index !== -1) {
+      mockDB.fechamentos[index] = {
+        ...mockDB.fechamentos[index],
+        abertura_id: aberturaId,
+        data: dataFormatada,
+        hora: fechamento.hora,
+        total_vendas: fechamento.totalVendas,
+        total_retiradas: fechamento.totalRetiradas,
+        valor_abertura: fechamento.valorAbertura,
+        valor_contado: fechamento.valorContado,
+        saldo_esperado: fechamento.saldoEsperado,
+        diferenca: fechamento.diferenca,
+        vendas: fechamento.vendas,
+        retiradas: fechamento.retiradas,
+        status: fechamento.status,
+        detalhe_especie: fechamento.detalheEspecie,
+        abertura_id: aberturaId || fechamento.aberturaId // Ensure binding
+      };
+      return true;
+    }
+    return false;
+  }
 
   const { data, error } = await supabase
     .from('fechamentos')
@@ -308,6 +571,31 @@ export async function getFechamentos(): Promise<Fechamento[]> {
   const userId = await getUserId();
   console.log('🔒 DEBUG: Current User ID:', userId);
 
+  if (isMock) {
+    return mockDB.fechamentos
+      .filter(f => f.user_id === userId)
+      .sort((a, b) => b.data.localeCompare(a.data) || b.hora.localeCompare(a.hora))
+      .map(f => {
+        const [ano, mes, dia] = f.data.split('-');
+        return {
+          id: f.id,
+          aberturaId: f.abertura_id, // Include mapping
+          data: `${dia}/${mes}/${ano}`,
+          hora: f.hora.substring(0, 5),
+          totalVendas: parseFloat(f.total_vendas),
+          totalRetiradas: parseFloat(f.total_retiradas),
+          valorAbertura: parseFloat(f.valor_abertura),
+          valorContado: parseFloat(f.valor_contado),
+          saldoEsperado: parseFloat(f.saldo_esperado),
+          diferenca: parseFloat(f.diferenca),
+          vendas: f.vendas || [],
+          retiradas: f.retiradas || [],
+          status: f.status,
+          detalheEspecie: f.detalhe_especie,
+        };
+      });
+  }
+
   const { data: result, error } = await supabase
     .from('fechamentos')
     .select('*')
@@ -332,6 +620,7 @@ export async function getFechamentos(): Promise<Fechamento[]> {
 
     return {
       id: f.id,
+      aberturaId: f.abertura_id, // Include mapping
       data: dataFormatada,
       hora: horaFormatada,
       totalVendas: parseFloat(f.total_vendas),
@@ -344,12 +633,19 @@ export async function getFechamentos(): Promise<Fechamento[]> {
       retiradas: f.retiradas || [],
       status: f.status,
       detalheEspecie: f.detalhe_especie,
+      aberturaId: f.abertura_id // Include mapping
     };
   });
 }
 
 export async function deleteFechamento(id: string): Promise<void> {
   const userId = await getUserId();
+
+  if (isMock) {
+    mockDB.fechamentos = mockDB.fechamentos.filter(f => !(f.id === id && f.user_id === userId));
+    return;
+  }
+
   await supabase
     .from('fechamentos')
     .delete()
@@ -359,6 +655,14 @@ export async function deleteFechamento(id: string): Promise<void> {
 
 export async function clearDayData(aberturaId: string): Promise<void> {
   const userId = await getUserId();
+
+  if (isMock) {
+    mockDB.vendas = mockDB.vendas.filter(v => !(v.user_id === userId && v.abertura_id === aberturaId));
+    mockDB.retiradas = mockDB.retiradas.filter(r => !(r.user_id === userId && r.abertura_id === aberturaId));
+    mockDB.aberturas = mockDB.aberturas.filter(a => !(a.user_id === userId && a.id === aberturaId));
+    // Nota: Fechamentos geralmente não são deletados por 'clearDayData' no fluxo original, mas se necessário, adicione aqui.
+    return;
+  }
 
   await supabase
     .from('vendas')
@@ -382,6 +686,11 @@ export async function clearDayData(aberturaId: string): Promise<void> {
 export async function getFechamentoByAbertura(aberturaId: string): Promise<boolean> {
   const userId = await getUserId();
 
+  if (isMock) {
+    const fechamento = mockDB.fechamentos.find(f => f.user_id === userId && f.abertura_id === aberturaId);
+    return !!fechamento;
+  }
+
   const { data, error } = await supabase
     .from('fechamentos')
     .select('id')
@@ -399,6 +708,15 @@ export async function getFechamentoByAbertura(aberturaId: string): Promise<boole
 
 export async function getUserSettings(): Promise<UserSettings | null> {
   const userId = await getUserId();
+
+  if (isMock) {
+    const settings = mockDB.user_settings.find(s => s.user_id === userId);
+    if (!settings) return null;
+    return {
+      userId: settings.user_id,
+      companyName: settings.company_name || '',
+    };
+  }
 
   const { data, error } = await supabase
     .from('user_settings')
@@ -421,6 +739,22 @@ export async function getUserSettings(): Promise<UserSettings | null> {
 
 export async function saveUserSettings(settings: UserSettings): Promise<void> {
   const userId = await getUserId();
+
+  if (isMock) {
+    const index = mockDB.user_settings.findIndex(s => s.user_id === userId);
+    const newSettings = {
+      user_id: userId,
+      company_name: settings.companyName,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (index !== -1) {
+      mockDB.user_settings[index] = newSettings;
+    } else {
+      mockDB.user_settings.push(newSettings);
+    }
+    return;
+  }
 
   // Upsert (insert or update) based on user_id
   const { error } = await supabase

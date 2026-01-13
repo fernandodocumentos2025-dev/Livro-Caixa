@@ -109,7 +109,7 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
 
       const fechamento: FechamentoType = {
         id: fechamentoId,
-        data: getCurrentDate(),
+        data: abertura?.data || getCurrentDate(),
         hora: getCurrentTime(),
         totalVendas,
         totalRetiradas,
