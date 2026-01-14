@@ -12,6 +12,7 @@ export default function Retiradas() {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     loadRetiradas();
@@ -20,7 +21,11 @@ export default function Retiradas() {
   const loadRetiradas = async () => {
     try {
       setLoading(true);
+      setError(false);
       setRetiradas(await getRetiradasHoje());
+    } catch (err) {
+      console.error('Erro ao carregar retiradas:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -77,7 +82,7 @@ export default function Retiradas() {
 
 
 
-  if (loading) {
+  if (loading || error) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">

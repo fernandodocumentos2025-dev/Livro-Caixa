@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [totalRetiradas, setTotalRetiradas] = useState(0);
   const [saldo, setSaldo] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const { user } = useAuth(); // Dependência do AuthContext
 
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(false);
       await checkAndResetIfNewDay();
       const vendasData = await getVendasHoje();
       const retiradasData = await getRetiradasHoje();
@@ -36,12 +38,9 @@ export default function Dashboard() {
       setTotalRetiradas(totalR);
       setSaldo(totalV - totalR);
     } catch (error) {
-      console.error('Erro ao carregar dados, usando mock de segurança:', error);
-      // Mock de segurança para evitar tela branca
-      setVendas([]);
-      setTotalVendas(0);
-      setTotalRetiradas(0);
-      setSaldo(0);
+      console.error('Erro ao carregar dados:', error);
+      setError(true);
+      // Não resetar para zero aqui; manter estado de erro/loading
     } finally {
       setLoading(false);
     }
@@ -49,7 +48,7 @@ export default function Dashboard() {
 
   const ultimasVendas = vendas.slice(-5).reverse();
 
-  if (loading) {
+  if (loading || error) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
