@@ -21,6 +21,8 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
   const [showModal, setShowModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [abertura, setAbertura] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const navigate = useNavigate();
 
   const valorNotasInput = useMonetaryInput(0);
@@ -31,22 +33,31 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
   }, []);
 
   const loadData = async () => {
-    const vendasData = await getVendasHoje();
-    const retiradasData = await getRetiradasHoje();
-    const aberturaData = await getAberturaHoje();
+    try {
+      setLoading(true);
+      setError(false);
+      const vendasData = await getVendasHoje();
+      const retiradasData = await getRetiradasHoje();
+      const aberturaData = await getAberturaHoje();
 
-    const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
-    const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
-    const valorAb = aberturaData?.valorAbertura || 0;
-    const saldoEsp = totalV - totalR + valorAb;
+      const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
+      const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
+      const valorAb = aberturaData?.valorAbertura || 0;
+      const saldoEsp = totalV - totalR + valorAb;
 
-    setAbertura(aberturaData);
-    setVendas(vendasData);
-    setRetiradas(retiradasData);
-    setTotalVendas(totalV);
-    setTotalRetiradas(totalR);
-    setValorAbertura(valorAb);
-    setSaldoEsperado(saldoEsp);
+      setAbertura(aberturaData);
+      setVendas(vendasData);
+      setRetiradas(retiradasData);
+      setTotalVendas(totalV);
+      setTotalRetiradas(totalR);
+      setValorAbertura(valorAb);
+      setSaldoEsperado(saldoEsp);
+    } catch (err) {
+      console.error('Erro ao carregar dados de fechamento:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calcularTotaisPorFormaPagamento = () => {
@@ -138,6 +149,17 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
 
   const totalDinheiroAtual = valorNotasInput.numericValue + valorMoedasInput.numericValue;
   const totalGeralPrevisto = totalDinheiroAtual + totaisPorPagamento.PIX + totaisPorPagamento.Crédito + totaisPorPagamento.Débito;
+
+  if (loading || error) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Preparando fechamento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
