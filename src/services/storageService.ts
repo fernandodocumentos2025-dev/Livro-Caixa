@@ -40,7 +40,7 @@ export async function saveAbertura(abertura: Abertura): Promise<void> {
       valor_abertura: abertura.valorAbertura,
       fechamento_original_id: abertura.fechamentoOriginalId || null,
     });
-    console.log('📦 MOCK: Abertura salva', abertura);
+
     return;
   }
 
@@ -632,7 +632,7 @@ export async function updateFechamento(id: string, fechamento: Fechamento, abert
 
 export async function getFechamentos(): Promise<Fechamento[]> {
   const userId = await getUserId();
-  console.log('🔒 DEBUG: Current User ID:', userId);
+
 
   if (isMock) {
     return mockDB.fechamentos
@@ -671,7 +671,7 @@ export async function getFechamentos(): Promise<Fechamento[]> {
     throw error;
   }
 
-  console.log('🔒 DEBUG: getFechamentos result:', result);
+
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((result as any[]) || []).map(f => {

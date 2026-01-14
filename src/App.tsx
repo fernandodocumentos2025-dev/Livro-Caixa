@@ -33,7 +33,7 @@ function AppContent() {
 
         await checkAndResetIfNewDay();
         const aberto = await hasCaixaAberto();
-        console.log('🔍 Verificando caixa aberto:', aberto);
+
         setCaixaAberto(aberto);
       } catch (error) {
         console.error('Erro ao inicializar:', error);

@@ -16,7 +16,7 @@ export async function checkAndResetIfNewDay(): Promise<void> {
   // Função mantida por compatibilidade, mas não faz mais reset automático
   // Caixas devem persistir independente da data
   try {
-    console.log('checkAndResetIfNewDay: Função desabilitada - caixas persistem independente da data');
+
   } catch (error) {
     console.error('Erro em checkAndResetIfNewDay:', error);
   }
@@ -135,21 +135,17 @@ export async function getFechamentos(): Promise<Fechamento[]> {
 export async function saveFechamento(fechamento: Fechamento): Promise<void> {
   try {
     const abertura = await getAberturaHoje();
-    console.log('🔒 DEBUG: Salvando fechamento. Abertura:', abertura);
 
-    if (abertura?.fechamentoOriginalId) {
-      console.log('🔒 DEBUG: Atualizando fechamento existente:', abertura.fechamentoOriginalId);
+    if (abertura && abertura.fechamentoOriginalId) {
       const updated = await storageService.updateFechamento(abertura.fechamentoOriginalId, fechamento, abertura.id);
 
       if (!updated) {
-        console.log('🔒 DEBUG: Fechamento original não encontrado (pode ter sido deletado). Criando novo.');
         await storageService.saveFechamento(fechamento, abertura.id);
       }
     } else {
-      console.log('🔒 DEBUG: Criando novo fechamento');
       await storageService.saveFechamento(fechamento, abertura?.id || null);
     }
-    console.log('🔒 DEBUG: Fechamento salvo com sucesso');
+
   } catch (error) {
     console.error('Erro ao salvar fechamento:', error);
     throw error;
@@ -226,21 +222,17 @@ export async function saveAbertura(abertura: Abertura): Promise<void> {
 
 export async function hasCaixaAberto(): Promise<boolean> {
   try {
-    console.log('📋 hasCaixaAberto: Iniciando verificação...');
+
     const abertura = await getAberturaHoje();
-    console.log('📋 hasCaixaAberto: Abertura encontrada?', !!abertura, abertura?.id);
 
     if (!abertura) {
-      console.log('📋 hasCaixaAberto: Sem abertura → retornando FALSE');
+
       return false;
     }
 
     // Verificar se já existe um fechamento para esta abertura
     const isFechado = await storageService.getFechamentoByAbertura(abertura.id);
-    console.log('📋 hasCaixaAberto: Já foi fechado?', isFechado);
-    const resultado = !isFechado;
-    console.log('📋 hasCaixaAberto: Resultado final:', resultado);
-    return resultado;
+    return !isFechado;
   } catch (error) {
     console.error('Erro em hasCaixaAberto:', error);
     return false;
@@ -259,7 +251,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
     if (aberturaAtual) {
       // Se estamos tentando reabrir O MESMO caixa que já está aberto (caso de erro de estado), apenas retornamos true
       if (fechamento.aberturaId && aberturaAtual.id === fechamento.aberturaId) {
-        console.log('📦 O caixa original já está aberto. Apenas removendo registro de fechamento redundante.');
+
         await deleteFechamento(fechamentoId);
         return true;
       }
@@ -273,7 +265,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
     const oldAberturaId = fechamento.aberturaId;
 
     if (oldAberturaId) {
-      console.log('📦 Tentando restaurar abertura original:', oldAberturaId);
+
       // Basicamente, ao deletar o fechamento, a abertura original (se existir) volta a ser "a última aberta"
       await deleteFechamento(fechamentoId);
 
@@ -282,7 +274,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
       const aberturaRestaurada = await storageService.getAberturaById(oldAberturaId);
 
       if (aberturaRestaurada) {
-        console.log('📦 Abertura restaurada com sucesso e carregada no cache:', aberturaRestaurada);
+
         aberturaCache = aberturaRestaurada;
         // Limpar caches de vendas/retiradas para forçar recarregamento
         vendasCache = [];

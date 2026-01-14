@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isMock = !import.meta.env.VITE_SUPABASE_URL;
 
     if (isMock) {
-      console.log('⚠️ Modo Mock Ativado: Usando usuário de teste.');
+
       setUser({
         id: 'mock-user-id',
         email: 'teste@exemplo.com',
