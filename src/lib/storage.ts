@@ -8,9 +8,10 @@
 import { Venda, Retirada, Fechamento, Abertura } from '../types';
 import * as storageService from '../services/storageService';
 
-let aberturaCache: Abertura | null = null;
-let vendasCache: Venda[] = [];
-let retiradasCache: Retirada[] = [];
+// Cache removido para garantir consistência com o banco (Supabase)
+// let aberturaCache: Abertura | null = null; // REMOVIDO
+// let vendasCache: Venda[] = []; // REMOVIDO
+// let retiradasCache: Retirada[] = []; // REMOVIDO
 
 export async function checkAndResetIfNewDay(): Promise<void> {
   // Função mantida por compatibilidade, mas não faz mais reset automático
@@ -27,8 +28,7 @@ export async function getVendasHoje(): Promise<Venda[]> {
     const abertura = await getAberturaHoje();
     if (!abertura) return [];
 
-    vendasCache = await storageService.getVendasByAbertura(abertura.id);
-    return vendasCache;
+    return await storageService.getVendasByAbertura(abertura.id);
   } catch (error) {
     console.error('Erro ao buscar vendas:', error);
     return [];
@@ -41,7 +41,7 @@ export async function saveVenda(venda: Venda): Promise<void> {
     if (!abertura) throw new Error('Nenhuma abertura de caixa encontrada');
 
     await storageService.saveVenda(venda, abertura.id);
-    vendasCache.push(venda);
+    // vendasCache.push(venda); // Cache removido
   } catch (error) {
     console.error('Erro ao salvar venda:', error);
     throw error;
@@ -52,10 +52,8 @@ export async function updateVenda(id: string, updatedVenda: Venda): Promise<void
   try {
     await storageService.updateVenda(id, updatedVenda);
 
-    const index = vendasCache.findIndex(v => v.id === id);
-    if (index !== -1) {
-      vendasCache[index] = updatedVenda;
-    }
+    await storageService.updateVenda(id, updatedVenda);
+    // Cache logic removed
   } catch (error) {
     console.error('Erro ao atualizar venda:', error);
     throw error;
@@ -65,7 +63,8 @@ export async function updateVenda(id: string, updatedVenda: Venda): Promise<void
 export async function deleteVenda(id: string): Promise<void> {
   try {
     await storageService.deleteVenda(id);
-    vendasCache = vendasCache.filter(v => v.id !== id);
+    await storageService.deleteVenda(id);
+    // vendasCache = vendasCache.filter(v => v.id !== id); // Cache removido
   } catch (error) {
     console.error('Erro ao deletar venda:', error);
     throw error;
@@ -77,8 +76,7 @@ export async function getRetiradasHoje(): Promise<Retirada[]> {
     const abertura = await getAberturaHoje();
     if (!abertura) return [];
 
-    retiradasCache = await storageService.getRetiradasByAbertura(abertura.id);
-    return retiradasCache;
+    return await storageService.getRetiradasByAbertura(abertura.id);
   } catch (error) {
     console.error('Erro ao buscar retiradas:', error);
     return [];
@@ -91,7 +89,7 @@ export async function saveRetirada(retirada: Retirada): Promise<void> {
     if (!abertura) throw new Error('Nenhuma abertura de caixa encontrada');
 
     await storageService.saveRetirada(retirada, abertura.id);
-    retiradasCache.push(retirada);
+    // retiradasCache.push(retirada); // Cache removido
   } catch (error) {
     console.error('Erro ao salvar retirada:', error);
     throw error;
@@ -102,10 +100,8 @@ export async function updateRetirada(id: string, updatedRetirada: Retirada): Pro
   try {
     await storageService.updateRetirada(id, updatedRetirada);
 
-    const index = retiradasCache.findIndex(r => r.id === id);
-    if (index !== -1) {
-      retiradasCache[index] = updatedRetirada;
-    }
+    await storageService.updateRetirada(id, updatedRetirada);
+    // Cache logic removed
   } catch (error) {
     console.error('Erro ao atualizar retirada:', error);
     throw error;
@@ -115,7 +111,8 @@ export async function updateRetirada(id: string, updatedRetirada: Retirada): Pro
 export async function deleteRetirada(id: string): Promise<void> {
   try {
     await storageService.deleteRetirada(id);
-    retiradasCache = retiradasCache.filter(r => r.id !== id);
+    await storageService.deleteRetirada(id);
+    // retiradasCache = retiradasCache.filter(r => r.id !== id); // Cache removido
   } catch (error) {
     console.error('Erro ao deletar retirada:', error);
     throw error;
@@ -168,9 +165,9 @@ export async function clearDayData(): Promise<void> {
 
     await storageService.clearDayData(abertura.id);
 
-    aberturaCache = null;
-    vendasCache = [];
-    retiradasCache = [];
+    // aberturaCache = null;
+    // vendasCache = [];
+    // retiradasCache = [];
   } catch (error) {
     console.error('Erro ao limpar dados do dia:', error);
   }
@@ -179,7 +176,8 @@ export async function clearDayData(): Promise<void> {
 export async function getAberturaHoje(): Promise<Abertura | null> {
   try {
     // Buscar o último caixa aberto, independente da data
-    // Primeiro verifica se há cache válido
+    // SEM CACHE - Busca direta do banco para garantir fonte da verdade
+    /*
     if (aberturaCache) {
       // Verificar se o caixa em cache ainda está aberto
       const isFechado = await storageService.getFechamentoByAbertura(aberturaCache.id);
@@ -189,13 +187,14 @@ export async function getAberturaHoje(): Promise<Abertura | null> {
       // Se foi fechado, limpar cache
       aberturaCache = null;
     }
+    */
 
     // Buscar último caixa aberto do banco
     const abertura = await storageService.getUltimaAberturaAberta();
 
     if (abertura) {
-      aberturaCache = abertura;
-      return aberturaCache;
+      // aberturaCache = abertura;
+      return abertura;
     }
 
     return null;
@@ -208,7 +207,7 @@ export async function getAberturaHoje(): Promise<Abertura | null> {
 export async function saveAbertura(abertura: Abertura): Promise<void> {
   try {
     await storageService.saveAbertura(abertura);
-    aberturaCache = abertura;
+    // aberturaCache = abertura;
   } catch (error) {
     if (error instanceof Error && error.message.includes('O caixa já foi aberto hoje')) {
       // Erro esperado de lógica, usar warn para não poluir console
@@ -275,10 +274,10 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
 
       if (aberturaRestaurada) {
 
-        aberturaCache = aberturaRestaurada;
+        // aberturaCache = aberturaRestaurada;
         // Limpar caches de vendas/retiradas para forçar recarregamento
-        vendasCache = [];
-        retiradasCache = [];
+        // vendasCache = [];
+        // retiradasCache = [];
       } else {
         console.warn('⚠️ Abertura original não encontrada no banco mesmo após remover fechamento.');
       }

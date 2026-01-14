@@ -3,7 +3,11 @@ import { Venda, Retirada, Fechamento, Abertura, UserSettings } from '../types';
 
 const isMock = !import.meta.env.VITE_SUPABASE_URL;
 
-// Banco de dados em memória para Modo MOCK
+if (isMock) {
+  console.warn('⚠️ VITE_SUPABASE_URL não detectado. Iniciando em MODO MOCK (Dados locais e voláteis).');
+}
+
+// Banco de dados em memória para Modo MOCK - Garantir que inicia ZERADO
 const mockDB = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   aberturas: [] as any[],
