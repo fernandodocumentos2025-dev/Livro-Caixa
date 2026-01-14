@@ -11,13 +11,19 @@ export default function Retiradas() {
   const [editingRetirada, setEditingRetirada] = useState<Retirada | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRetiradas();
   }, []);
 
   const loadRetiradas = async () => {
-    setRetiradas(await getRetiradasHoje());
+    try {
+      setLoading(true);
+      setRetiradas(await getRetiradasHoje());
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddRetirada = async (retiradaData: Omit<Retirada, 'id'>) => {
@@ -69,6 +75,19 @@ export default function Retiradas() {
 
   const totalRetiradas = retiradas.reduce((sum, r) => sum + r.valor, 0);
 
+
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Carregando retiradas...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
@@ -78,9 +97,8 @@ export default function Retiradas() {
 
       {message && (
         <div
-          className={`mb-6 p-4 rounded-lg ${
-            message.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}
+          className={`mb-6 p-4 rounded-lg ${message.includes('sucesso') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
         >
           {message}
         </div>

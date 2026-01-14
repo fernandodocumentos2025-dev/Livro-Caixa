@@ -11,13 +11,19 @@ export default function Vendas() {
   const [editingVenda, setEditingVenda] = useState<Venda | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadVendas();
   }, []);
 
   const loadVendas = async () => {
-    setVendas(await getVendasHoje());
+    try {
+      setLoading(true);
+      setVendas(await getVendasHoje());
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddVenda = async (vendaData: Omit<Venda, 'id'>) => {
@@ -73,6 +79,19 @@ export default function Vendas() {
   };
 
   const totalVendas = vendas.reduce((sum, v) => sum + v.total, 0);
+
+
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Carregando vendas...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">

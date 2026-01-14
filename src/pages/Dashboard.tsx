@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [totalVendas, setTotalVendas] = useState(0);
   const [totalRetiradas, setTotalRetiradas] = useState(0);
   const [saldo, setSaldo] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const { user } = useAuth(); // Dependência do AuthContext
 
@@ -22,6 +23,7 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
+      setLoading(true);
       await checkAndResetIfNewDay();
       const vendasData = await getVendasHoje();
       const retiradasData = await getRetiradasHoje();
@@ -40,10 +42,23 @@ export default function Dashboard() {
       setTotalVendas(0);
       setTotalRetiradas(0);
       setSaldo(0);
+    } finally {
+      setLoading(false);
     }
   };
 
   const ultimasVendas = vendas.slice(-5).reverse();
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Atualizando valores...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
