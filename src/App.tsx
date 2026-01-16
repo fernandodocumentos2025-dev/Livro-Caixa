@@ -32,12 +32,29 @@ function AppContent() {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         await checkAndResetIfNewDay();
-        const aberto = await hasCaixaAberto();
+        // hasCaixaAberto returns true if ANY box is open.
+        // We need to fetch the specific box to check strict compliance with "Today"
+        // import { getAberturaHoje } from './lib/storage'; // ensure this is imported or use existing hasCaixaAberto logic if modified
 
-        setCaixaAberto(aberto);
+        // Wait, hasCaixaAberto calls getAberturaHoje inside. 
+        // Let's rely on hasCaixaAberto BUT strictly verify the date here to decide redirect.
+        // Actually, cleaner approach:
+
+        const openBox = await import('./lib/storage').then(m => m.getAberturaHoje());
+        const today = await import('./utils/formatters').then(m => m.getCurrentDate());
+
+        if (openBox && openBox.data === today) {
+          setCaixaAberto(true);
+        } else {
+          // If box is open but NOT today, default to False (Abertura screen)
+          // unless... wait, re-opening handles this via handleAberturaCompleta.
+          // So for INITIAL LOAD, we block past dates.
+          setCaixaAberto(false);
+        }
+
       } catch (error) {
         console.error('Erro ao inicializar:', error);
-        setCaixaAberto(false); // Em caso de erro, força tela de abertura
+        setCaixaAberto(false);
       } finally {
         setLoading(false);
       }

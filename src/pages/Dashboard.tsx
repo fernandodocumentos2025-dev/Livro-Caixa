@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getVendasHoje, getRetiradasHoje, checkAndResetIfNewDay } from '../lib/storage';
+import { getVendasHoje, getRetiradasHoje, checkAndResetIfNewDay, getAberturaHoje } from '../lib/storage'; // Added getAberturaHoje
 import { useAuth } from '../contexts/AuthContext';
-import { Venda } from '../types';
+import { Venda, Abertura } from '../types'; // Added Abertura
 import MonetaryValue from '../components/MonetaryValue';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus, Calendar } from 'lucide-react'; // Added Calendar
 
 export default function Dashboard() {
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [totalVendas, setTotalVendas] = useState(0);
   const [totalRetiradas, setTotalRetiradas] = useState(0);
   const [saldo, setSaldo] = useState(0);
+  const [abertura, setAbertura] = useState<Abertura | null>(null); // Added state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -29,6 +30,7 @@ export default function Dashboard() {
       await checkAndResetIfNewDay();
       const vendasData = await getVendasHoje();
       const retiradasData = await getRetiradasHoje();
+      const aberturaData = await getAberturaHoje(); // Fetch abertura
 
       const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
       const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
@@ -37,6 +39,7 @@ export default function Dashboard() {
       setTotalVendas(totalV);
       setTotalRetiradas(totalR);
       setSaldo(totalV - totalR);
+      setAbertura(aberturaData); // Set state
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setError(true);
@@ -61,9 +64,21 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-600">Resumo do dia atual</p>
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600">Resumo do movimento</p>
+        </div>
+
+        {abertura && (
+          <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 flex items-center gap-2">
+            <Calendar className="text-blue-600" size={20} />
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-semibold">Caixa</p>
+              <p className="text-lg font-bold text-gray-900 leading-none">{abertura.data}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">

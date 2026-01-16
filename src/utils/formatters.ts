@@ -7,11 +7,13 @@ export function formatCurrency(value: number): string {
 
 export function formatDate(date: Date): string {
   try {
-    return new Intl.DateTimeFormat('pt-BR').format(date);
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo'
+    }).format(date);
   } catch (error) {
     console.error('Erro em formatDate:', error);
     const d = new Date();
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    return d.toLocaleDateString('pt-BR');
   }
 }
 
@@ -20,11 +22,12 @@ export function formatTime(date: Date): string {
     return new Intl.DateTimeFormat('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
     }).format(date);
   } catch (error) {
     console.error('Erro em formatTime:', error);
     const d = new Date();
-    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 }
 
@@ -36,6 +39,7 @@ export function formatDateTime(date: Date): string {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
     }).format(date);
   } catch (error) {
     console.error('Erro em formatDateTime:', error);
@@ -44,23 +48,11 @@ export function formatDateTime(date: Date): string {
 }
 
 export function getCurrentDate(): string {
-  try {
-    return formatDate(new Date());
-  } catch (error) {
-    console.error('Erro em getCurrentDate:', error);
-    const d = new Date();
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
-  }
+  return formatDate(new Date());
 }
 
 export function getCurrentTime(): string {
-  try {
-    return formatTime(new Date());
-  } catch (error) {
-    console.error('Erro em getCurrentTime:', error);
-    const d = new Date();
-    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-  }
+  return formatTime(new Date());
 }
 
 export function isSameDay(date1: string, date2: string): boolean {
