@@ -41,14 +41,12 @@ function AppContent() {
         // Actually, cleaner approach:
 
         const openBox = await import('./lib/storage').then(m => m.getAberturaHoje());
-        const today = await import('./utils/formatters').then(m => m.getCurrentDate());
-
-        if (openBox && openBox.data === today) {
+        // REMOVED STRICT DATE CHECK ("&& openBox.data === today")
+        // Logic restored: If there is ANY open box (even from past dates), go to Dashboard.
+        // This failsafe prevents "zombie" boxes that are open but inaccessible.
+        if (openBox) {
           setCaixaAberto(true);
         } else {
-          // If box is open but NOT today, default to False (Abertura screen)
-          // unless... wait, re-opening handles this via handleAberturaCompleta.
-          // So for INITIAL LOAD, we block past dates.
           setCaixaAberto(false);
         }
 

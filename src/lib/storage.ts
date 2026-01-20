@@ -287,7 +287,11 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
       // Fallback para caixas antigos sem ID vinculado (cria novo, comportamento legado)
       console.warn('⚠️ Abertura original não identificada. Criando nova (Legado).');
       const abertura: Abertura = {
-        id: crypto.randomUUID(),
+        // USO DE FALLBACK MANUAL PARA UUID PARA EVITAR CRASH EM CELULARES ANTIGOS
+        // (crypto.randomUUID não é suportado em alguns WebViews Android)
+        id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         data: fechamento.data,
         hora: getCurrentTime(),
         valorAbertura: fechamento.valorAbertura,
