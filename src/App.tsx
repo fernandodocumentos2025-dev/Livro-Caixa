@@ -11,7 +11,7 @@ import Vendas from './pages/Vendas';
 import Retiradas from './pages/Retiradas';
 import Fechamento from './pages/Fechamento';
 import Historico from './pages/Historico';
-import { hasCaixaAberto, checkAndResetIfNewDay } from './lib/storage';
+import { checkAndResetIfNewDay } from './lib/storage';
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();

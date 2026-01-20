@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Venda } from '../types';
 import { getCurrentDate, getCurrentTime, formatCurrency } from '../utils/formatters';
 import { useMonetaryInput } from '../hooks/useMonetaryInput';
-import { X, DollarSign, CreditCard, Banknote, Smartphone } from 'lucide-react';
+import { X, CreditCard, Banknote, Smartphone } from 'lucide-react';
 
 interface VendaFormProps {
   onSubmit: (venda: Omit<Venda, 'id'>) => void;

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Fechamento } from '../types';
 import MonetaryValue from './MonetaryValue';
 import { formatCurrency } from '../utils/formatters';
@@ -19,7 +18,7 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isReabrindo, setIsReabrindo] = useState(false);
-  const navigate = useNavigate();
+
 
   const calcularTotaisPorFormaPagamento = () => {
     const totais = {

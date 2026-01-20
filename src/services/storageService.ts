@@ -98,6 +98,7 @@ export async function getAberturaHoje(data: string): Promise<Abertura | null> {
     .select('*')
     .eq('user_id', userId)
     .eq('data', dataFormatada)
+    .is('deleted_at', null) // Soft Delete check
     .order('hora', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -144,6 +145,7 @@ export async function getAberturaById(id: string): Promise<Abertura | null> {
     .select('*')
     .eq('id', id)
     .eq('user_id', userId)
+    .is('deleted_at', null) // Soft Delete check
     .single();
 
   if (error) {
@@ -211,6 +213,7 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
       .select('id')
       .eq('user_id', userId)
       .eq('abertura_id', abertura.id)
+      .is('deleted_at', null) // Soft Delete check
       .maybeSingle();
 
     // Se não tem fechamento, esta é a abertura aberta
@@ -308,6 +311,7 @@ export async function getVendasByAbertura(aberturaId: string): Promise<Venda[]> 
     .select('*')
     .eq('user_id', userId)
     .eq('abertura_id', aberturaId)
+    .is('deleted_at', null) // Soft Delete check
     .order('data', { ascending: true })
     .order('hora', { ascending: true });
 
@@ -381,12 +385,14 @@ export async function deleteVenda(id: string): Promise<void> {
     return;
   }
 
+  const timestamp = new Date().toISOString();
   await supabase
     .from('vendas')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('id', id)
     .eq('user_id', userId);
 }
+
 
 export async function saveRetirada(retirada: Retirada, aberturaId: string): Promise<void> {
   const userId = await getUserId();
@@ -451,6 +457,7 @@ export async function getRetiradasByAbertura(aberturaId: string): Promise<Retira
     .select('*')
     .eq('user_id', userId)
     .eq('abertura_id', aberturaId)
+    .is('deleted_at', null) // Soft Delete check
     .order('data', { ascending: true })
     .order('hora', { ascending: true });
 
@@ -515,9 +522,10 @@ export async function deleteRetirada(id: string): Promise<void> {
     return;
   }
 
+  const timestamp = new Date().toISOString();
   await supabase
     .from('retiradas')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('id', id)
     .eq('user_id', userId);
 }
@@ -667,6 +675,7 @@ export async function getFechamentos(): Promise<Fechamento[]> {
     .from('fechamentos')
     .select('*')
     .eq('user_id', userId)
+    .is('deleted_at', null) // Soft Delete check
     .order('data', { ascending: false })
     .order('hora', { ascending: false });
 
@@ -713,9 +722,10 @@ export async function deleteFechamento(id: string): Promise<void> {
     return;
   }
 
+  const timestamp = new Date().toISOString();
   await supabase
     .from('fechamentos')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('id', id)
     .eq('user_id', userId);
 }
@@ -731,21 +741,23 @@ export async function clearDayData(aberturaId: string): Promise<void> {
     return;
   }
 
+  const timestamp = new Date().toISOString();
+
   await supabase
     .from('vendas')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('user_id', userId)
     .eq('abertura_id', aberturaId);
 
   await supabase
     .from('retiradas')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('user_id', userId)
     .eq('abertura_id', aberturaId);
 
   await supabase
     .from('aberturas')
-    .delete()
+    .update({ deleted_at: timestamp })
     .eq('id', aberturaId)
     .eq('user_id', userId);
 }
@@ -763,6 +775,7 @@ export async function getFechamentoByAbertura(aberturaId: string): Promise<boole
     .select('id')
     .eq('user_id', userId)
     .eq('abertura_id', aberturaId)
+    .is('deleted_at', null) // Soft Delete check
     .maybeSingle();
 
   if (error) {

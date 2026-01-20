@@ -7,6 +7,7 @@ export interface Venda {
   formaPagamento: string;
   hora: string;
   data: string;
+  deletedAt?: string;
 }
 
 export interface Retirada {
@@ -15,6 +16,7 @@ export interface Retirada {
   valor: number;
   hora: string;
   data: string;
+  deletedAt?: string;
 }
 
 export interface Abertura {
@@ -23,6 +25,7 @@ export interface Abertura {
   hora: string;
   valorAbertura: number;
   fechamentoOriginalId?: string;
+  deletedAt?: string;
 }
 
 export interface Fechamento {
@@ -43,6 +46,7 @@ export interface Fechamento {
     notas: number;
     moedas: number;
   };
+  deletedAt?: string;
 }
 
 export interface UserSettings {
