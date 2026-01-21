@@ -200,6 +200,7 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
     .from('aberturas')
     .select('*')
     .eq('user_id', userId)
+    .is('deleted_at', null) // CRITICAL: Filter out soft-deleted aberturas
     .order('data', { ascending: false })
     .order('hora', { ascending: false });
 
