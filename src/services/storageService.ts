@@ -730,6 +730,58 @@ export async function deleteFechamento(id: string): Promise<void> {
     .eq('user_id', userId);
 }
 
+/**
+ * Remove COMPLETAMENTE um registro do histórico.
+ * Isso inclui o Fechamento, a Abertura vinculada e todas as Vendas/Retiradas.
+ * Diferente de 'deleteFechamento' (que apenas 'reabre' o caixa), esta função apaga o dia.
+ */
+export async function deleteHistoricoCompleto(fechamentoId: string): Promise<void> {
+  const userId = await getUserId();
+  const timestamp = new Date().toISOString();
+
+  // 1. Buscar o fechamento para descobrir qual a abertura vinculada
+  const { data: fechamento } = await supabase
+    .from('fechamentos')
+    .select('abertura_id')
+    .eq('id', fechamentoId)
+    .single();
+
+  if (!fechamento) return; // Já não existe
+
+  // 2. Soft Delete no Fechamento
+  await supabase
+    .from('fechamentos')
+    .update({ deleted_at: timestamp })
+    .eq('id', fechamentoId)
+    .eq('user_id', userId);
+
+  // 3. Se houver abertura vinculada, deletar ela e seus itens
+  if (fechamento.abertura_id) {
+    const aberturaId = fechamento.abertura_id;
+
+    // Soft Delete na Abertura
+    await supabase
+      .from('aberturas')
+      .update({ deleted_at: timestamp })
+      .eq('id', aberturaId)
+      .eq('user_id', userId);
+
+    // Soft Delete nas Vendas
+    await supabase
+      .from('vendas')
+      .update({ deleted_at: timestamp })
+      .eq('abertura_id', aberturaId)
+      .eq('user_id', userId);
+
+    // Soft Delete nas Retiradas
+    await supabase
+      .from('retiradas')
+      .update({ deleted_at: timestamp })
+      .eq('abertura_id', aberturaId)
+      .eq('user_id', userId);
+  }
+}
+
 export async function clearDayData(aberturaId: string): Promise<void> {
   const userId = await getUserId();
 

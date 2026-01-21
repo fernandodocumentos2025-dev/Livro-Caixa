@@ -301,3 +301,12 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
 function getCurrentTime(): string {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
+
+export async function deleteHistoricoCompleto(fechamentoId: string): Promise<void> {
+  try {
+    await storageService.deleteHistoricoCompleto(fechamentoId);
+  } catch (error) {
+    console.error('Erro ao deletar histórico completo:', error);
+    throw error;
+  }
+}

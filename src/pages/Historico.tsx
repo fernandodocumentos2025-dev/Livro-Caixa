@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFechamentos, deleteFechamento } from '../lib/storage';
+import { getFechamentos, deleteHistoricoCompleto } from '../lib/storage';
 import { getUserSettings } from '../services/storageService';
 import { Fechamento } from '../types';
 import FechamentoCard from '../components/FechamentoCard';
@@ -37,7 +37,7 @@ export default function Historico({ onReabertura }: HistoricoProps) {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteFechamento(id);
+    await deleteHistoricoCompleto(id);
     await loadFechamentos();
   };
 
