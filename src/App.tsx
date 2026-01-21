@@ -106,6 +106,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<AberturaCaixa onAberturaCompleta={handleAberturaCompleta} />} />
               <Route path="/historico" element={<Historico onReabertura={handleAberturaCompleta} />} />
+              <Route path="/relatorio-mensal" element={<RelatorioMensal />} />
               <Route path="*" element={<AberturaCaixa onAberturaCompleta={handleAberturaCompleta} />} />
             </Routes>
           </div>
