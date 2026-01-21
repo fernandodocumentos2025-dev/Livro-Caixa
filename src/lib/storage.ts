@@ -8,10 +8,7 @@
 import { Venda, Retirada, Fechamento, Abertura } from '../types';
 import * as storageService from '../services/storageService';
 
-// Cache removido para garantir consistência com o banco (Supabase)
-// let aberturaCache: Abertura | null = null; // REMOVIDO
-// let vendasCache: Venda[] = []; // REMOVIDO
-// let retiradasCache: Retirada[] = []; // REMOVIDO
+// Cache removed to ensure server strict consistency (Supabase)
 
 export async function checkAndResetIfNewDay(): Promise<void> {
   // Função mantida por compatibilidade, mas não faz mais reset automático
@@ -41,7 +38,7 @@ export async function saveVenda(venda: Venda): Promise<void> {
     if (!abertura) throw new Error('Nenhuma abertura de caixa encontrada');
 
     await storageService.saveVenda(venda, abertura.id);
-    // vendasCache.push(venda); // Cache removido
+    // Cache removed
   } catch (error) {
     console.error('Erro ao salvar venda:', error);
     throw error;
@@ -177,23 +174,11 @@ export async function getAberturaHoje(): Promise<Abertura | null> {
   try {
     // Buscar o último caixa aberto, independente da data
     // SEM CACHE - Busca direta do banco para garantir fonte da verdade
-    /*
-    if (aberturaCache) {
-      // Verificar se o caixa em cache ainda está aberto
-      const isFechado = await storageService.getFechamentoByAbertura(aberturaCache.id);
-      if (!isFechado) {
-        return aberturaCache;
-      }
-      // Se foi fechado, limpar cache
-      aberturaCache = null;
-    }
-    */
 
     // Buscar último caixa aberto do banco
     const abertura = await storageService.getUltimaAberturaAberta();
 
     if (abertura) {
-      // aberturaCache = abertura;
       return abertura;
     }
 
@@ -273,11 +258,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
       const aberturaRestaurada = await storageService.getAberturaById(oldAberturaId);
 
       if (aberturaRestaurada) {
-
-        // aberturaCache = aberturaRestaurada;
-        // Limpar caches de vendas/retiradas para forçar recarregamento
-        // vendasCache = [];
-        // retiradasCache = [];
+        // Cache cleared
       } else {
         console.warn('⚠️ Abertura original não encontrada no banco mesmo após remover fechamento.');
       }

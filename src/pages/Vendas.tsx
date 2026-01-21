@@ -5,6 +5,7 @@ import VendaForm from '../components/VendaForm';
 import MonetaryValue from '../components/MonetaryValue';
 import { formatCurrency } from '../utils/formatters';
 import { Pencil, Trash2, X } from 'lucide-react';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
 
 export default function Vendas() {
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -30,6 +31,8 @@ export default function Vendas() {
       setLoading(false);
     }
   };
+
+  useRealtimeSync({ table: 'vendas', onUpdate: loadVendas });
 
   const handleAddVenda = async (vendaData: Omit<Venda, 'id'>) => {
     try {

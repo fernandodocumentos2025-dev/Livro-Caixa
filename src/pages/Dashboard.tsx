@@ -4,7 +4,8 @@ import { getVendasHoje, getRetiradasHoje, checkAndResetIfNewDay, getAberturaHoje
 import { useAuth } from '../contexts/AuthContext';
 import { Venda, Abertura } from '../types'; // Added Abertura
 import MonetaryValue from '../components/MonetaryValue';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus, Calendar } from 'lucide-react'; // Added Calendar
+import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Plus, Calendar } from 'lucide-react';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
 
 export default function Dashboard() {
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -30,7 +31,7 @@ export default function Dashboard() {
       await checkAndResetIfNewDay();
       const vendasData = await getVendasHoje();
       const retiradasData = await getRetiradasHoje();
-      const aberturaData = await getAberturaHoje(); // Fetch abertura
+      const aberturaData = await getAberturaHoje();
 
       const totalV = vendasData.reduce((sum, v) => sum + v.total, 0);
       const totalR = retiradasData.reduce((sum, r) => sum + r.valor, 0);
@@ -39,15 +40,20 @@ export default function Dashboard() {
       setTotalVendas(totalV);
       setTotalRetiradas(totalR);
       setSaldo(totalV - totalR);
-      setAbertura(aberturaData); // Set state
+      setAbertura(aberturaData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setError(true);
-      // Não resetar para zero aqui; manter estado de erro/loading
     } finally {
       setLoading(false);
     }
   };
+
+  // Realtime Sync Hooks (Placed after loadData definition)
+  useRealtimeSync({ table: 'vendas', onUpdate: loadData });
+  useRealtimeSync({ table: 'retiradas', onUpdate: loadData });
+  useRealtimeSync({ table: 'aberturas', onUpdate: loadData });
+  useRealtimeSync({ table: 'fechamentos', onUpdate: loadData });
 
   const ultimasVendas = vendas.slice(-5).reverse();
 
