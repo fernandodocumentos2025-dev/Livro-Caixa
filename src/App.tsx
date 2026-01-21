@@ -11,6 +11,7 @@ import Vendas from './pages/Vendas';
 import Retiradas from './pages/Retiradas';
 import Fechamento from './pages/Fechamento';
 import Historico from './pages/Historico';
+import RelatorioMensal from './pages/RelatorioMensal';
 import { checkAndResetIfNewDay, hasCaixaAberto } from './lib/storage';
 
 function AppContent() {
@@ -126,6 +127,7 @@ function AppContent() {
               <Route path="/retiradas" element={<Retiradas />} />
               <Route path="/fechamento" element={<Fechamento onFechamentoConcluido={handleFechamentoConcluido} />} />
               <Route path="/historico" element={<Historico />} />
+              <Route path="/relatorio-mensal" element={<RelatorioMensal />} />
             </Routes>
           </main>
         </div>

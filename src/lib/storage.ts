@@ -155,6 +155,15 @@ export async function deleteFechamento(id: string): Promise<void> {
   }
 }
 
+export async function getFechamentosMensais(ano: number, mes: number): Promise<Fechamento[]> {
+  try {
+    return await storageService.getFechamentosMensais(ano, mes);
+  } catch (error) {
+    console.error('Erro ao buscar fechamentos mensais:', error);
+    throw error;
+  }
+}
+
 export async function clearDayData(): Promise<void> {
   try {
     const abertura = await getAberturaHoje();

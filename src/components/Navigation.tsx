@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, ArrowDownCircle, CheckCircle, History, Menu, X, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, ArrowDownCircle, CheckCircle, History, FileText, Menu, X, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,6 +13,7 @@ export default function Navigation() {
     { to: '/retiradas', icon: ArrowDownCircle, label: 'Retiradas' },
     { to: '/fechamento', icon: CheckCircle, label: 'Fechamento' },
     { to: '/historico', icon: History, label: 'Histórico' },
+    { to: '/relatorio-mensal', icon: FileText, label: 'Relatório Mensal' },
   ];
 
   const handleLogout = async () => {
@@ -32,9 +33,8 @@ export default function Navigation() {
       </button>
 
       <aside
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 z-40 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 w-64 flex flex-col`}
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 shadow-lg transition-transform duration-300 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 w-64 flex flex-col`}
       >
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-blue-600">Livro Caixa</h1>
@@ -48,10 +48,9 @@ export default function Navigation() {
               to={to}
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors touch-manipulation ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50'
+                `flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors touch-manipulation ${isActive
+                  ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-50'
                 }`
               }
             >

@@ -715,6 +715,90 @@ export async function getFechamentos(): Promise<Fechamento[]> {
   });
 }
 
+/**
+ * Buscar fechamentos de um mês específico (para relatório mensal)
+ * Regras contábeis estritas:
+ * - Apenas fechamentos com deleted_at IS NULL
+ * - Apenas do usuário autenticado (user_id = auth.uid())
+ * - Apenas dentro do mês/ano especificado
+ */
+export async function getFechamentosMensais(ano: number, mes: number): Promise<Fechamento[]> {
+  const userId = await getUserId();
+
+  // Calcular intervalo de datas (YYYY-MM-01 até YYYY-(MM+1)-01)
+  const startDate = `${ano}-${mes.toString().padStart(2, '0')}-01`;
+  const nextMonth = mes === 12 ? 1 : mes + 1;
+  const nextYear = mes === 12 ? ano + 1 : ano;
+  const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+
+  if (isMock) {
+    return mockDB.fechamentos
+      .filter(f =>
+        f.user_id === userId &&
+        f.data >= startDate &&
+        f.data < endDate
+      )
+      .sort((a, b) => a.data.localeCompare(b.data))
+      .map(f => {
+        const [ano, mes, dia] = f.data.split('-');
+        return {
+          id: f.id,
+          aberturaId: f.abertura_id,
+          data: `${dia}/${mes}/${ano}`,
+          hora: f.hora.substring(0, 5),
+          totalVendas: parseFloat(f.total_vendas),
+          totalRetiradas: parseFloat(f.total_retiradas),
+          valorAbertura: parseFloat(f.valor_abertura),
+          valorContado: parseFloat(f.valor_contado),
+          saldoEsperado: parseFloat(f.saldo_esperado),
+          diferenca: parseFloat(f.diferenca),
+          vendas: f.vendas || [],
+          retiradas: f.retiradas || [],
+          status: f.status,
+          detalheEspecie: f.detalhe_especie,
+        };
+      });
+  }
+
+  const { data: result, error } = await supabase
+    .from('fechamentos')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null) // Filtro obrigatório: apenas não-deletados
+    .gte('data', startDate)
+    .lt('data', endDate)
+    .order('data', { ascending: true }); // Ordem cronológica
+
+  if (error) {
+    console.error('Erro ao buscar fechamentos mensais:', error);
+    throw error;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((result as any[]) || []).map(f => {
+    const [ano, mes, dia] = f.data.split('-');
+    const dataFormatada = `${dia}/${mes}/${ano}`;
+    const horaFormatada = f.hora.substring(0, 5);
+
+    return {
+      id: f.id,
+      aberturaId: f.abertura_id,
+      data: dataFormatada,
+      hora: horaFormatada,
+      totalVendas: parseFloat(f.total_vendas),
+      totalRetiradas: parseFloat(f.total_retiradas),
+      valorAbertura: parseFloat(f.valor_abertura),
+      valorContado: parseFloat(f.valor_contado),
+      saldoEsperado: parseFloat(f.saldo_esperado),
+      diferenca: parseFloat(f.diferenca),
+      vendas: f.vendas || [],
+      retiradas: f.retiradas || [],
+      status: f.status,
+      detalheEspecie: f.detalhe_especie
+    };
+  });
+}
+
 export async function deleteFechamento(id: string): Promise<void> {
   const userId = await getUserId();
 
