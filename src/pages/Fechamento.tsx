@@ -8,7 +8,7 @@ import { useMonetaryInput } from '../hooks/useMonetaryInput';
 import { CheckCircle, TrendingUp, TrendingDown, DollarSign, X, Wallet, Coins } from 'lucide-react';
 
 interface FechamentoProps {
-  onFechamentoConcluido?: () => void;
+  onFechamentoConcluido?: () => Promise<void>;
 }
 
 export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
@@ -138,7 +138,7 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
       };
 
       await saveFechamento(fechamento);
-      onFechamentoConcluido?.();
+      await onFechamentoConcluido?.();
       navigate('/historico');
     } catch (error) {
       console.error('Erro ao fechar caixa:', error);

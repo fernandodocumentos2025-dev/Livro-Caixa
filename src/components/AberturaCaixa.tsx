@@ -10,7 +10,7 @@ import { getUserSettings, saveUserSettings } from '../services/storageService';
 import { useEffect } from 'react';
 
 interface AberturaCaixaProps {
-  onAberturaCompleta: () => void;
+  onAberturaCompleta: () => Promise<void>;
 }
 
 export default function AberturaCaixa({ onAberturaCompleta }: AberturaCaixaProps) {
@@ -62,7 +62,7 @@ export default function AberturaCaixa({ onAberturaCompleta }: AberturaCaixaProps
 
     try {
       await saveAbertura(abertura);
-      onAberturaCompleta();
+      await onAberturaCompleta();
     } catch (err) {
       if (err instanceof Error) {
         setErro(err.message);

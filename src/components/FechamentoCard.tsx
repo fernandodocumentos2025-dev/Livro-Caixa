@@ -10,7 +10,7 @@ interface FechamentoCardProps {
   fechamento: Fechamento;
   onDelete: (id: string) => void;
   empresaNome?: string;
-  onReabrir?: () => void;
+  onReabrir?: () => Promise<void>;
 }
 
 export default function FechamentoCard({ fechamento, onDelete, empresaNome = '', onReabrir }: FechamentoCardProps) {
@@ -52,14 +52,11 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
         const sucesso = await reabrirCaixa(fechamento.id);
         if (sucesso) {
           if (onReabrir) {
-            onReabrir();
+            await onReabrir();
           }
 
-          // FORÇAR RECARREGAMENTO:
-          // Como o estado global às vezes não propaga rápido o suficiente para a navegação SPA,
-          // vamos forçar um reload para garantir que o App reinicie já com o status "Aberto" detectado do banco.
-          // Isso resolve o problema de "ficar na tela de abertura".
-          window.location.href = '/';
+          // State sync is handled by App.tsx via onReabrir callback now.
+          // window.location.href = '/'; // Removed explicit reload
         } else {
           alert('Erro ao reabrir o caixa');
         }

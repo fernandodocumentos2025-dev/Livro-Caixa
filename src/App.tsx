@@ -11,44 +11,47 @@ import Vendas from './pages/Vendas';
 import Retiradas from './pages/Retiradas';
 import Fechamento from './pages/Fechamento';
 import Historico from './pages/Historico';
-import { checkAndResetIfNewDay } from './lib/storage';
+import { checkAndResetIfNewDay, hasCaixaAberto } from './lib/storage';
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
   const [caixaAberto, setCaixaAberto] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Função central para verificar estado no servidor
+  // Garante que o Client nunca confie apenas no cache local
+  const checkEstadoCaixa = async () => {
+    if (!user) return;
+    try {
+      // hasCaixaAberto vai direto ao Supabase (verificado em storage.ts)
+      const isOpen = await hasCaixaAberto();
+      setCaixaAberto(isOpen);
+    } catch (error) {
+      console.error('Erro ao sincronizar estado do caixa:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Listener para re-sincronizar quando a janela ganha foco (Multi-tab/Multi-device)
+    window.addEventListener('focus', checkEstadoCaixa);
+    return () => window.removeEventListener('focus', checkEstadoCaixa);
+  }, [user]);
+
   useEffect(() => {
     async function init() {
       if (authLoading) return;
       if (!user) {
-        setCaixaAberto(false); // Reset state when user logs out
+        setCaixaAberto(false);
         setLoading(false);
         return;
       }
 
       try {
-        // Aguardar um pouco para garantir que o Supabase Auth está pronto
         await new Promise(resolve => setTimeout(resolve, 500));
-
         await checkAndResetIfNewDay();
-        // hasCaixaAberto returns true if ANY box is open.
-        // We need to fetch the specific box to check strict compliance with "Today"
-        // import { getAberturaHoje } from './lib/storage'; // ensure this is imported or use existing hasCaixaAberto logic if modified
 
-        // Wait, hasCaixaAberto calls getAberturaHoje inside. 
-        // Let's rely on hasCaixaAberto BUT strictly verify the date here to decide redirect.
-        // Actually, cleaner approach:
-
-        const openBox = await import('./lib/storage').then(m => m.getAberturaHoje());
-        // REMOVED STRICT DATE CHECK ("&& openBox.data === today")
-        // Logic restored: If there is ANY open box (even from past dates), go to Dashboard.
-        // This failsafe prevents "zombie" boxes that are open but inaccessible.
-        if (openBox) {
-          setCaixaAberto(true);
-        } else {
-          setCaixaAberto(false);
-        }
+        // Verificação inicial rigorosa
+        await checkEstadoCaixa();
 
       } catch (error) {
         console.error('Erro ao inicializar:', error);
@@ -61,12 +64,14 @@ function AppContent() {
     init();
   }, [user, authLoading]);
 
-  const handleAberturaCompleta = () => {
-    setCaixaAberto(true);
+  const handleAberturaCompleta = async () => {
+    // Não apenas setar true, mas revalidar com o servidor para garantir consistência
+    await checkEstadoCaixa();
   };
 
-  const handleFechamentoConcluido = () => {
-    setCaixaAberto(false);
+  const handleFechamentoConcluido = async () => {
+    // Revalidar para garantir que o fechamento foi processado
+    await checkEstadoCaixa();
   };
 
   if (authLoading || loading) {

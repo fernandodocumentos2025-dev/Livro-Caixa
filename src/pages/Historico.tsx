@@ -7,7 +7,7 @@ import FechamentoCard from '../components/FechamentoCard';
 import { History as HistoryIcon, ArrowLeft, Calendar } from 'lucide-react';
 
 interface HistoricoProps {
-  onReabertura?: () => void;
+  onReabertura?: () => Promise<void>;
 }
 
 export default function Historico({ onReabertura }: HistoricoProps) {
