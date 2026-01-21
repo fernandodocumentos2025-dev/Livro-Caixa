@@ -4,7 +4,7 @@ import { getFechamentos, deleteHistoricoCompleto } from '../lib/storage';
 import { getUserSettings } from '../services/storageService';
 import { Fechamento } from '../types';
 import FechamentoCard from '../components/FechamentoCard';
-import { History as HistoryIcon, ArrowLeft, Calendar } from 'lucide-react';
+import { History as HistoryIcon, ArrowLeft, Calendar, FileText } from 'lucide-react';
 
 interface HistoricoProps {
   onReabertura?: () => Promise<void>;
@@ -80,15 +80,27 @@ export default function Historico({ onReabertura }: HistoricoProps) {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
-        <button
-          onClick={handleVoltar}
-          className="flex items-center gap-2 mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-semibold"
-        >
-          <ArrowLeft size={20} />
-          Voltar
-        </button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Histórico de Fechamentos</h1>
-        <p className="text-sm sm:text-base text-gray-600">Visualize os fechamentos anteriores</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <button
+              onClick={handleVoltar}
+              className="flex items-center gap-2 mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-semibold touch-manipulation"
+            >
+              <ArrowLeft size={20} />
+              Voltar
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Histórico de Fechamentos</h1>
+            <p className="text-sm sm:text-base text-gray-600">Visualize os fechamentos anteriores</p>
+          </div>
+
+          <button
+            onClick={() => navigate('/relatorio-mensal')}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm touch-manipulation sm:mt-8"
+          >
+            <FileText size={20} />
+            <span>Relatório Mensal</span>
+          </button>
+        </div>
       </div>
 
       {fechamentos.length > 0 && (
