@@ -55,8 +55,8 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
             await onReabrir();
           }
 
-          // State sync is handled by App.tsx via onReabrir callback now.
-          // window.location.href = '/'; // Removed explicit reload
+          // Redirect to dashboard to show the reopened cash box
+          window.location.href = '/';
         } else {
           alert('Erro ao reabrir o caixa');
         }
