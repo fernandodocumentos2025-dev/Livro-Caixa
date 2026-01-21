@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getFechamentosMensais } from '../lib/storage';
 import { getUserSettings } from '../services/storageService';
-import { saveMonthlyPDF } from '../lib/exportMonthly';
-import { FileDown, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { saveMonthlyPDF, shareMonthlyPDF } from '../lib/exportMonthly';
+import { FileDown, Calendar, AlertCircle, CheckCircle, Share2 } from 'lucide-react';
 
 export default function RelatorioMensal() {
     const [mesAno, setMesAno] = useState('');
@@ -59,6 +59,39 @@ export default function RelatorioMensal() {
         }
     };
 
+    const handleShare = async () => {
+        if (!mesAno) {
+            setError('Selecione um mês');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const [ano, mes] = mesAno.split('-').map(Number);
+            const fechamentos = await getFechamentosMensais(ano, mes);
+
+            if (fechamentos.length === 0) {
+                setError('Nenhum fechamento encontrado para o mês selecionado. Certifique-se de que há caixas fechados neste período.');
+                return;
+            }
+
+            const shared = await shareMonthlyPDF(fechamentos, mes, ano, empresaNome);
+            if (shared) {
+                setSuccess('PDF compartilhado com sucesso!');
+            } else {
+                setSuccess(`PDF gerado! ${fechamentos.length} fechamento(s) incluído(s).`);
+            }
+        } catch (err) {
+            console.error('Erro ao compartilhar PDF:', err);
+            setError(err instanceof Error ? err.message : 'Erro ao compartilhar PDF. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
             <div className="max-w-3xl mx-auto">
@@ -100,23 +133,34 @@ export default function RelatorioMensal() {
                         </div>
                     )}
 
-                    <button
-                        onClick={handleExport}
-                        disabled={loading || !mesAno}
-                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                    >
-                        {loading ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Gerando PDF...
-                            </>
-                        ) : (
-                            <>
-                                <FileDown size={20} />
-                                Exportar PDF do Mês
-                            </>
-                        )}
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={handleExport}
+                            disabled={loading || !mesAno}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Gerando...
+                                </>
+                            ) : (
+                                <>
+                                    <FileDown size={20} />
+                                    Baixar PDF
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            onClick={handleShare}
+                            disabled={loading || !mesAno}
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        >
+                            <Share2 size={20} />
+                            Compartilhar
+                        </button>
+                    </div>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">

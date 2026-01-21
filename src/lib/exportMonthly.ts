@@ -182,3 +182,37 @@ export function saveMonthlyPDF(
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+export async function shareMonthlyPDF(
+    fechamentos: Fechamento[],
+    mes: number,
+    ano: number,
+    empresaNome: string = ''
+): Promise<boolean> {
+    try {
+        const blob = generateMonthlyPDFBlob(fechamentos, mes, ano, empresaNome);
+        const filename = `relatorio-mensal-${ano}-${mes.toString().padStart(2, '0')}.pdf`;
+        const file = new File([blob], filename, { type: 'application/pdf' });
+
+        const mesNome = getMesNome(mes);
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: `Relatório Mensal - ${mesNome}/${ano}`,
+                text: `Relatório financeiro de ${mesNome}/${ano}${empresaNome ? ` - ${empresaNome}` : ''}`,
+            });
+            return true;
+        } else {
+            // Fallback: download if share not supported
+            saveMonthlyPDF(fechamentos, mes, ano, empresaNome);
+            return false;
+        }
+    } catch (error) {
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+            console.error('Erro ao compartilhar PDF:', error);
+        }
+        return false;
+    }
+}
