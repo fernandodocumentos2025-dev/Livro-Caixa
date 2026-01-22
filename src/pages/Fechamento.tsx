@@ -138,7 +138,12 @@ export default function Fechamento({ onFechamentoConcluido }: FechamentoProps) {
       };
 
       await saveFechamento(fechamento);
-      await onFechamentoConcluido?.();
+
+      // CRITICAL: Wait for app state update to prevent "Ghost Box" on navigation
+      if (onFechamentoConcluido) {
+        await onFechamentoConcluido();
+      }
+
       navigate('/historico');
     } catch (error) {
       console.error('Erro ao fechar caixa:', error);
