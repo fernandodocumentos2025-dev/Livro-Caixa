@@ -195,45 +195,51 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
     return null;
   }
 
-  // Buscar todas as aberturas ordenadas por data e hora (mais recente primeiro)
+  // Buscar as últimas 10 aberturas para garantir que encontramos a ativa
+  // (Normalmente a ativa é a primeira, mas por segurança buscamos mais)
   const { data: aberturas, error } = await supabase
     .from('aberturas')
-    .select('*')
+    .select('id, data, hora, valor_abertura, fechamento_original_id')
     .eq('user_id', userId)
-    .is('deleted_at', null) // CRITICAL: Filter out soft-deleted aberturas
+    .is('deleted_at', null)
     .order('data', { ascending: false })
-    .order('hora', { ascending: false });
+    .order('hora', { ascending: false })
+    .limit(10);
 
   if (error) throw error;
   if (!aberturas || aberturas.length === 0) return null;
 
-  // Verificar cada abertura para encontrar a primeira que não tem fechamento
-  for (const abertura of aberturas) {
-    const { data: fechamento } = await supabase
-      .from('fechamentos')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('abertura_id', abertura.id)
-      .is('deleted_at', null) // Soft Delete check
-      .maybeSingle();
+  // Coletar IDs das aberturas candidatas
+  const aberturaIds = aberturas.map(a => a.id);
 
-    // Se não tem fechamento, esta é a abertura aberta
-    if (!fechamento) {
-      // Converter data de YYYY-MM-DD para DD/MM/YYYY
-      const [anoDb, mesDb, diaDb] = abertura.data.split('-');
-      const dataOriginal = `${diaDb}/${mesDb}/${anoDb}`;
+  // Buscar SE existe algum fechamento para essas aberturas
+  const { data: fechamentos } = await supabase
+    .from('fechamentos')
+    .select('abertura_id')
+    .in('abertura_id', aberturaIds)
+    .eq('user_id', userId)
+    .is('deleted_at', null);
 
-      // Converter hora de HH:MM:SS para HH:MM
-      const horaFormatada = abertura.hora.substring(0, 5);
+  const fechamentosMap = new Set(fechamentos?.map(f => f.abertura_id));
 
-      return {
-        id: abertura.id,
-        data: dataOriginal,
-        hora: horaFormatada,
-        valorAbertura: parseFloat(abertura.valor_abertura),
-        fechamentoOriginalId: abertura.fechamento_original_id,
-      };
-    }
+  // Encontrar a primeira abertura que NÃO tem fechamento
+  const aberturaAberta = aberturas.find(a => !fechamentosMap.has(a.id));
+
+  if (aberturaAberta) {
+    // Converter data de YYYY-MM-DD para DD/MM/YYYY
+    const [anoDb, mesDb, diaDb] = aberturaAberta.data.split('-');
+    const dataOriginal = `${diaDb}/${mesDb}/${anoDb}`;
+
+    // Converter hora de HH:MM:SS para HH:MM
+    const horaFormatada = aberturaAberta.hora.substring(0, 5);
+
+    return {
+      id: aberturaAberta.id,
+      data: dataOriginal,
+      hora: horaFormatada,
+      valorAbertura: parseFloat(aberturaAberta.valor_abertura),
+      fechamentoOriginalId: aberturaAberta.fechamento_original_id,
+    };
   }
 
   return null;

@@ -33,9 +33,17 @@ function AppContent() {
   };
 
   useEffect(() => {
-    // Listener para re-sincronizar quando a janela ganha foco (Multi-tab/Multi-device)
+    // Sincronização inicial e por foco
     window.addEventListener('focus', checkEstadoCaixa);
-    return () => window.removeEventListener('focus', checkEstadoCaixa);
+
+    // Polling de segurança: verifica estado a cada 5 segundos
+    // Isso garante que se outro dispositivo fechar o caixa, este atualiza rapidament
+    const intervalId = setInterval(checkEstadoCaixa, 5000);
+
+    return () => {
+      window.removeEventListener('focus', checkEstadoCaixa);
+      clearInterval(intervalId);
+    };
   }, [user]);
 
   useEffect(() => {

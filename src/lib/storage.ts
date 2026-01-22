@@ -130,7 +130,11 @@ export async function saveFechamento(fechamento: Fechamento): Promise<void> {
   try {
     const abertura = await getAberturaHoje();
 
-    if (abertura && abertura.fechamentoOriginalId) {
+    if (!abertura) {
+      throw new Error('Não há caixa aberto para fechar. Atualize a página.');
+    }
+
+    if (abertura.fechamentoOriginalId) {
       const updated = await storageService.updateFechamento(abertura.fechamentoOriginalId, fechamento, abertura.id);
 
       if (!updated) {
