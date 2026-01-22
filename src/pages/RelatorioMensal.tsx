@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getFechamentosMensais } from '../lib/storage';
 import { getUserSettings } from '../services/storageService';
 import { saveMonthlyPDF, shareMonthlyPDF } from '../lib/exportMonthly';
-import { FileDown, Calendar, AlertCircle, CheckCircle, Share2 } from 'lucide-react';
+import { FileDown, Calendar, AlertCircle, CheckCircle, Share2, X } from 'lucide-react';
 
 export default function RelatorioMensal() {
     const [mesAno, setMesAno] = useState('');
@@ -10,6 +11,8 @@ export default function RelatorioMensal() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadSettings();
@@ -28,6 +31,10 @@ export default function RelatorioMensal() {
         } catch (err) {
             console.error('Erro ao carregar configurações:', err);
         }
+    };
+
+    const handleClose = () => {
+        navigate('/historico');
     };
 
     const handleExport = async () => {
@@ -95,13 +102,22 @@ export default function RelatorioMensal() {
     return (
         <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
             <div className="max-w-3xl mx-auto">
-                <div className="mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                        Relatório Mensal
-                    </h1>
-                    <p className="text-sm sm:text-base text-gray-600">
-                        Exporte o resumo financeiro consolidado de um mês específico
-                    </p>
+                <div className="mb-6 sm:mb-8 flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                            Relatório Mensal
+                        </h1>
+                        <p className="text-sm sm:text-base text-gray-600">
+                            Exporte o resumo financeiro consolidado de um mês específico
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleClose}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Fechar"
+                    >
+                        <X size={24} />
+                    </button>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">

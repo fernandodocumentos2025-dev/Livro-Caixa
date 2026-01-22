@@ -13,7 +13,7 @@ export default function Navigation() {
     { to: '/retiradas', icon: ArrowDownCircle, label: 'Retiradas' },
     { to: '/fechamento', icon: CheckCircle, label: 'Fechamento' },
     { to: '/historico', icon: History, label: 'Histórico' },
-    { to: '/relatorio-mensal', icon: FileText, label: 'Relatório Mensal' },
+
   ];
 
   const handleLogout = async () => {

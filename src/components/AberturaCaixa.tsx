@@ -243,17 +243,7 @@ export default function AberturaCaixa({ onAberturaCompleta }: AberturaCaixaProps
           Acessar Histórico
         </button>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/relatorio-mensal');
-          }}
-          className="w-full mt-4 px-6 py-3 sm:py-4 bg-blue-600 text-white border-2 border-blue-600 rounded-lg font-bold text-base sm:text-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-2"
-        >
-          <FileText size={20} />
-          Relatório Mensal
-        </button>
+
 
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs sm:text-sm text-gray-500 text-center">
