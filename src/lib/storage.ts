@@ -7,6 +7,7 @@
 
 import { Venda, Retirada, Fechamento, Abertura } from '../types';
 import * as storageService from '../services/storageService';
+import { getCurrentTime } from '../utils/formatters';
 
 // Cache removed to ensure server strict consistency (Supabase)
 
@@ -311,9 +312,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
   }
 }
 
-function getCurrentTime(): string {
-  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
+
 
 export async function deleteHistoricoCompleto(fechamentoId: string): Promise<void> {
   try {

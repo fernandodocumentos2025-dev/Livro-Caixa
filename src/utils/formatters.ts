@@ -1,3 +1,5 @@
+import { getBrazilISODate, getBrazilTime, formatBRDate } from './dateHelpers';
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -12,8 +14,9 @@ export function formatDate(date: Date): string {
     }).format(date);
   } catch (error) {
     console.error('Erro em formatDate:', error);
+    // Fallback ainda deve tentar respeitar string se possível
     const d = new Date();
-    return d.toLocaleDateString('pt-BR');
+    return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
   }
 }
 
@@ -27,7 +30,7 @@ export function formatTime(date: Date): string {
   } catch (error) {
     console.error('Erro em formatTime:', error);
     const d = new Date();
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
   }
 }
 
@@ -43,16 +46,19 @@ export function formatDateTime(date: Date): string {
     }).format(date);
   } catch (error) {
     console.error('Erro em formatDateTime:', error);
+    // Fallback safe
     return `${formatDate(date)} ${formatTime(date)}`;
   }
 }
 
 export function getCurrentDate(): string {
-  return formatDate(new Date());
+  // Retorna DD/MM/YYYY baseado no horario do Brasil
+  return formatBRDate(getBrazilISODate());
 }
 
 export function getCurrentTime(): string {
-  return formatTime(new Date());
+  // Retorna HH:mm baseado no horario do Brasil
+  return getBrazilTime();
 }
 
 export function isSameDay(date1: string, date2: string): boolean {

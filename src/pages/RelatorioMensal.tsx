@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFechamentosMensais } from '../lib/storage';
 import { getUserSettings } from '../services/storageService';
 import { saveMonthlyPDF, shareMonthlyPDF } from '../lib/exportMonthly';
+import { getBrazilISODate } from '../utils/dateHelpers';
 import { FileDown, Calendar, AlertCircle, CheckCircle, Share2, X } from 'lucide-react';
 
 export default function RelatorioMensal() {
@@ -16,9 +17,8 @@ export default function RelatorioMensal() {
 
     useEffect(() => {
         loadSettings();
-        // Pré-selecionar mês atual
-        const hoje = new Date();
-        const mesAtual = `${hoje.getFullYear()}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}`;
+        // Pré-selecionar mês atual (Fuso Brasil)
+        const mesAtual = getBrazilISODate().slice(0, 7);
         setMesAno(mesAtual);
     }, []);
 
@@ -131,7 +131,7 @@ export default function RelatorioMensal() {
                             value={mesAno}
                             onChange={(e) => setMesAno(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                            max={new Date().toISOString().slice(0, 7)}
+                            max={getBrazilISODate().slice(0, 7)}
                         />
                     </div>
 
