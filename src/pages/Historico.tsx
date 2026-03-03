@@ -137,15 +137,19 @@ export default function Historico({ onReabertura }: HistoricoProps) {
 
       {fechamentosFiltrados.length > 0 ? (
         <div className="space-y-6">
-          {fechamentosFiltrados.map((fechamento) => (
-            <FechamentoCard
-              key={fechamento.id}
-              fechamento={fechamento}
-              onDelete={handleDelete}
-              empresaNome={empresaNome}
-              onReabrir={onReabertura}
-            />
-          ))}
+          {fechamentosFiltrados.map((fechamento) => {
+            const globalIndex = fechamentos.findIndex(f => f.id === fechamento.id);
+            return (
+              <FechamentoCard
+                key={fechamento.id}
+                fechamento={fechamento}
+                onDelete={handleDelete}
+                empresaNome={empresaNome}
+                onReabrir={onReabertura}
+                globalIndex={globalIndex}
+              />
+            );
+          })}
         </div>
       ) : fechamentos.length > 0 ? (
         <div className="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">

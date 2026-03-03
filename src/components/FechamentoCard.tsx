@@ -11,9 +11,10 @@ interface FechamentoCardProps {
   onDelete: (id: string) => void;
   empresaNome?: string;
   onReabrir?: () => Promise<void>;
+  globalIndex?: number;
 }
 
-export default function FechamentoCard({ fechamento, onDelete, empresaNome = '', onReabrir }: FechamentoCardProps) {
+export default function FechamentoCard({ fechamento, onDelete, empresaNome = '', onReabrir, globalIndex = 0 }: FechamentoCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -173,19 +174,29 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
           </div>
           <div className="flex flex-wrap gap-2">
             {(!fechamento.status || fechamento.status === 'fechado') && (
-              <button
-                onClick={handleReabrir}
-                disabled={isReabrindo}
-                className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Reabrir Caixa"
-                aria-label="Reabrir Caixa"
-              >
-                {isReabrindo ? (
-                  <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <RotateCcw size={18} className="sm:w-5 sm:h-5" />
+              <div className="relative group">
+                <button
+                  onClick={globalIndex >= 50 ? undefined : handleReabrir}
+                  disabled={isReabrindo || globalIndex >= 50}
+                  className={`p-2 rounded-lg transition-colors touch-manipulation ${globalIndex >= 50
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-orange-600 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                  title={globalIndex >= 50 ? 'Reabertura indisponível para este registro' : 'Reabrir Caixa'}
+                  aria-label={globalIndex >= 50 ? 'Reabertura indisponível' : 'Reabrir Caixa'}
+                >
+                  {isReabrindo ? (
+                    <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <RotateCcw size={18} className="sm:w-5 sm:h-5" />
+                  )}
+                </button>
+                {globalIndex >= 50 && (
+                  <div className="absolute right-0 top-10 z-10 w-56 bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg hidden group-hover:block pointer-events-none">
+                    Reabertura disponível apenas nos últimos 50 fechamentos. Este registro está bloqueado.
+                  </div>
                 )}
-              </button>
+              </div>
             )}
 
             <button
