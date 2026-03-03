@@ -227,21 +227,6 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
   const aberturaAberta = aberturas.find(a => !fechamentosMap.has(a.id));
 
   if (aberturaAberta) {
-    // SECURITY CHECK: Se houver uma abertura MAIS RECENTE que esta (e que está fechada),
-    // então esta abertura antiga provavelmente é um "zumbi" ou erro de consistência.
-    // O sistema deve privilegiar a cronologia.
-    const aberturasMaisRecentes = aberturas.filter(a =>
-      (a.data > aberturaAberta.data) ||
-      (a.data === aberturaAberta.data && a.hora > aberturaAberta.hora)
-    );
-
-    if (aberturasMaisRecentes.length > 0) {
-      // Se existem aberturas posteriores fechadas, esta antiga deve ser ignorada
-      // para não travar o usuário no passado.
-      // Isso corrige o bug "Volta para o mesmo caixa aberto" se ele for antigo.
-      return null;
-    }
-
     // Converter data de YYYY-MM-DD para DD/MM/YYYY
     const [anoDb, mesDb, diaDb] = aberturaAberta.data.split('-');
     const dataOriginal = `${diaDb}/${mesDb}/${anoDb}`;
