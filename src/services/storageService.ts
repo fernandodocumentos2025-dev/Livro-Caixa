@@ -195,8 +195,8 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
     return null;
   }
 
-  // Buscar as últimas 10 aberturas para garantir que encontramos a ativa
-  // (Normalmente a ativa é a primeira, mas por segurança buscamos mais)
+  // Buscar as últimas 50 aberturas para garantir que encontramos a ativa
+  // (Inclui casos de reabertura de caixas antigos com muitos registros históricos)
   const { data: aberturas, error } = await supabase
     .from('aberturas')
     .select('id, data, hora, valor_abertura, fechamento_original_id')
@@ -204,7 +204,7 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
     .is('deleted_at', null)
     .order('data', { ascending: false })
     .order('hora', { ascending: false })
-    .limit(10);
+    .limit(50);
 
   if (error) throw error;
   if (!aberturas || aberturas.length === 0) return null;

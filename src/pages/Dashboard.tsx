@@ -87,7 +87,17 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {abertura && (
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-orange-500">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Abertura</h3>
+              <DollarSign className="text-orange-500" size={20} />
+            </div>
+            <MonetaryValue value={abertura.valorAbertura} size="xl" className="text-orange-600" />
+          </div>
+        )}
+
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 border-green-500">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-600 uppercase">Total de Vendas</h3>
