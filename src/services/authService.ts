@@ -130,6 +130,18 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
   }
 }
 
+export async function updatePassword(password: string): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      return { error: getFriendlyErrorMessage(error) };
+    }
+    return { error: null };
+  } catch (err) {
+    return { error: getFriendlyErrorMessage(err) };
+  }
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -149,20 +161,20 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-export function onAuthStateChange(callback: (user: User | null) => void): () => void {
-  const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+export function onAuthStateChange(callback: (user: User | null, event?: string) => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (session?.user) {
       callback({
         id: session.user.id,
         email: session.user.email || '',
         created_at: session.user.created_at || new Date().toISOString(),
-      });
+      }, event);
     } else {
-      callback(null);
+      callback(null, event);
     }
   });
 
-  getCurrentUser().then(callback);
+  getCurrentUser().then(user => callback(user));
 
   return () => {
     data.subscription.unsubscribe();

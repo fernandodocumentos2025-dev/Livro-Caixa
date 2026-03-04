@@ -8,6 +8,9 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
+  recoveryMode: boolean;
+  setRecoveryMode: (mode: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<authService.User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(false);
 
   useEffect(() => {
     const isMock = !import.meta.env.VITE_SUPABASE_URL;
@@ -35,9 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const unsubscribe = authService.onAuthStateChange((currentUser) => {
+    const unsubscribe = authService.onAuthStateChange((currentUser, event) => {
       setUser(currentUser);
       setLoading(false);
+      // Supabase emite PASSWORD_RECOVERY quando o usuário clica no link do email
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true);
+      }
     });
 
     return () => unsubscribe();
@@ -87,8 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: response.error };
   };
 
+  const updatePassword = async (password: string) => {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      return { error: null };
+    }
+    const response = await authService.updatePassword(password);
+    return { error: response.error };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, resetPassword, updatePassword, recoveryMode, setRecoveryMode }}>
       {children}
     </AuthContext.Provider>
   );
