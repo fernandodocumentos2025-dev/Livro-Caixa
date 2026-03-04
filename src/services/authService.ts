@@ -116,6 +116,20 @@ export async function signOut(): Promise<void> {
   }
 }
 
+export async function resetPassword(email: string): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) {
+      return { error: getFriendlyErrorMessage(error) };
+    }
+    return { error: null };
+  } catch (err) {
+    return { error: getFriendlyErrorMessage(err) };
+  }
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();

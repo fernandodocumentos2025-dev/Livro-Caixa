@@ -1,28 +1,56 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { DollarSign, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { DollarSign, Mail, Lock, UserPlus, LogIn, KeyRound } from 'lucide-react';
+
+type AuthMode = 'login' | 'register' | 'reset';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
+
+  const clearState = () => {
+    setError('');
+    setSuccess('');
+    setPassword('');
+    setConfirmPassword('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
+    if (mode === 'reset') {
+      if (!email) {
+        setError('Informe seu email');
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error } = await resetPassword(email);
+        if (error) {
+          setError(error);
+        } else {
+          setSuccess('Email enviado! Verifique sua caixa de entrada e clique no link para redefinir sua senha.');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!email || !password) {
       setError('Preencha todos os campos');
       return;
     }
 
-    if (!isLogin && password !== confirmPassword) {
+    if (mode === 'register' && password !== confirmPassword) {
       setError('As senhas não coincidem');
       return;
     }
@@ -35,26 +63,18 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.includes('Invalid login credentials')) {
-            setError('Email ou senha incorretos');
-          } else {
-            setError(error);
-          }
+          setError(error.includes('Invalid login credentials') ? 'Email ou senha incorretos' : error);
         }
       } else {
         const { error } = await signUp(email, password);
         if (error) {
-          if (error.includes('User already registered')) {
-            setError('Este email já está cadastrado');
-          } else {
-            setError(error);
-          }
+          setError(error.includes('User already registered') ? 'Este email já está cadastrado' : error);
         } else {
           setSuccess('Conta criada com sucesso! Faça login para continuar.');
-          setIsLogin(true);
+          setMode('login');
           setPassword('');
           setConfirmPassword('');
         }
@@ -67,6 +87,8 @@ export default function Auth() {
     }
   };
 
+  const subtitle = mode === 'login' ? 'Entre na sua conta' : mode === 'register' ? 'Crie sua conta' : 'Recuperar Senha';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8">
@@ -75,9 +97,7 @@ export default function Auth() {
             <DollarSign className="text-blue-600" size={40} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Livro Caixa</h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
-          </p>
+          <p className="text-sm sm:text-base text-gray-600">{subtitle}</p>
         </div>
 
         {error && (
@@ -108,22 +128,24 @@ export default function Auth() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-                required
-              />
+          {mode !== 'reset' && (
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {!isLogin && (
+          {mode === 'register' && (
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Confirmar Senha</label>
               <div className="relative">
@@ -140,6 +162,19 @@ export default function Auth() {
             </div>
           )}
 
+          {/* Link "Esqueci minha senha" só aparece na tela de login */}
+          {mode === 'login' && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => { setMode('reset'); clearState(); }}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -150,33 +185,32 @@ export default function Auth() {
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : isLogin ? (
-              <>
-                <LogIn size={20} />
-                Entrar
-              </>
+            ) : mode === 'login' ? (
+              <><LogIn size={20} />Entrar</>
+            ) : mode === 'register' ? (
+              <><UserPlus size={20} />Criar Conta</>
             ) : (
-              <>
-                <UserPlus size={20} />
-                Criar Conta
-              </>
+              <><KeyRound size={20} />Enviar link de recuperação</>
             )}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-              setSuccess('');
-              setPassword('');
-              setConfirmPassword('');
-            }}
-            className="text-blue-600 hover:text-blue-700 font-semibold text-sm"
-          >
-            {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre'}
-          </button>
+        <div className="mt-6 text-center space-y-2">
+          {mode === 'reset' ? (
+            <button
+              onClick={() => { setMode('login'); clearState(); }}
+              className="text-blue-600 hover:text-blue-700 font-semibold text-sm"
+            >
+              ← Voltar para o login
+            </button>
+          ) : (
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); clearState(); }}
+              className="text-blue-600 hover:text-blue-700 font-semibold text-sm"
+            >
+              {mode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre'}
+            </button>
+          )}
         </div>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
