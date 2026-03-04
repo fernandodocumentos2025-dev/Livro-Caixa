@@ -175,8 +175,10 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
           <div className="flex flex-wrap gap-2">
             {(!fechamento.status || fechamento.status === 'fechado') && (
               <button
-                onClick={globalIndex >= 50 ? undefined : handleReabrir}
-                disabled={isReabrindo || globalIndex >= 50}
+                onClick={globalIndex >= 50
+                  ? () => alert('Este registro está fora do alcance de reabertura.\n\nA reabertura está disponível apenas nos últimos 50 fechamentos.')
+                  : handleReabrir}
+                disabled={isReabrindo}
                 className={`p-2 rounded-lg transition-colors touch-manipulation ${globalIndex >= 50
                   ? 'text-gray-300 cursor-not-allowed'
                   : 'text-orange-600 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -191,6 +193,7 @@ export default function FechamentoCard({ fechamento, onDelete, empresaNome = '',
                 )}
               </button>
             )}
+
 
 
             <button
