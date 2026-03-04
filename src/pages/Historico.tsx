@@ -14,6 +14,7 @@ export default function Historico({ onReabertura }: HistoricoProps) {
   const [fechamentos, setFechamentos] = useState<Fechamento[]>([]);
   const [empresaNome, setEmpresaNome] = useState('');
   const [mesSelecionado, setMesSelecionado] = useState<string>('todos');
+  const [loadingFechamentos, setLoadingFechamentos] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +34,12 @@ export default function Historico({ onReabertura }: HistoricoProps) {
   };
 
   const loadFechamentos = async () => {
-    setFechamentos(await getFechamentos());
+    setLoadingFechamentos(true);
+    try {
+      setFechamentos(await getFechamentos());
+    } finally {
+      setLoadingFechamentos(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -135,7 +141,11 @@ export default function Historico({ onReabertura }: HistoricoProps) {
         </div>
       )}
 
-      {fechamentosFiltrados.length > 0 ? (
+      {loadingFechamentos ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : fechamentosFiltrados.length > 0 ? (
         <div className="space-y-6">
           {fechamentosFiltrados.map((fechamento) => {
             const globalIndex = fechamentos.findIndex(f => f.id === fechamento.id);
@@ -166,6 +176,7 @@ export default function Historico({ onReabertura }: HistoricoProps) {
           <p className="text-sm sm:text-base text-gray-600 mb-6">
             Quando você fechar o caixa, os fechamentos aparecerão aqui.
           </p>
+
         </div>
       )}
     </div>

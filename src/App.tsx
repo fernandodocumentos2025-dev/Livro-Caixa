@@ -36,9 +36,9 @@ function AppContent() {
     // Sincronização inicial e por foco
     window.addEventListener('focus', checkEstadoCaixa);
 
-    // Polling de segurança: verifica estado a cada 5 segundos
-    // Isso garante que se outro dispositivo fechar o caixa, este atualiza rapidament
-    const intervalId = setInterval(checkEstadoCaixa, 5000);
+    // Polling de segurança: verifica estado a cada 30 segundos
+    // O evento de foco garante atualização imediata quando o usuário volta ao app
+    const intervalId = setInterval(checkEstadoCaixa, 30000);
 
     return () => {
       window.removeEventListener('focus', checkEstadoCaixa);
