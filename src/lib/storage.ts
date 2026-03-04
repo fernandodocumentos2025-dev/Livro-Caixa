@@ -145,6 +145,12 @@ export async function saveFechamento(fechamento: Fechamento): Promise<void> {
       await storageService.saveFechamento(fechamento, abertura?.id || null);
     }
 
+    // REVOGAR Passe VIP: após fechar o caixa com sucesso, o Security Check
+    // volta ao modo estrito para proteger o próximo dia de caixas Zumbis
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('reaberturaAtivaId');
+    }
+
   } catch (error) {
     console.error('Erro ao salvar fechamento:', error);
     throw error;
@@ -263,27 +269,20 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
     const oldAberturaId = fechamento.aberturaId;
 
     if (oldAberturaId) {
-
-      // Basicamente, ao deletar o fechamento, a abertura original (se existir) volta a ser "a última aberta"
-      await deleteFechamento(fechamentoId);
-
-      // FORÇAR ATUALIZAÇÃO DO CACHE:
-      // Buscamos explicitamente a abertura que acabamos de "liberar" para garantir que o App a veja imediatamente
-      const aberturaRestaurada = await storageService.getAberturaById(oldAberturaId);
-
-      if (aberturaRestaurada) {
-        // Cache cleared
-      } else {
-        console.warn('⚠️ Abertura original não encontrada no banco mesmo após remover fechamento.');
+      // PASSE VIP: gravar o ID no localStorage para que o Security Check
+      // deixe essa abertura específica passar quando o usuário voltar à Home
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('reaberturaAtivaId', oldAberturaId);
       }
+
+      // Ao deletar o fechamento, a abertura original volta a ser "a última aberta"
+      await deleteFechamento(fechamentoId);
 
       return true;
     } else {
       // Fallback para caixas antigos sem ID vinculado (cria novo, comportamento legado)
       console.warn('⚠️ Abertura original não identificada. Criando nova (Legado).');
       const abertura: Abertura = {
-        // USO DE FALLBACK MANUAL PARA UUID PARA EVITAR CRASH EM CELULARES ANTIGOS
-        // (crypto.randomUUID não é suportado em alguns WebViews Android)
         id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -303,7 +302,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
         await saveRetirada(retirada);
       }
 
-      await deleteFechamento(fechamentoId); // Remove o fechamento antigo pois agora foi "reaberto" como novo
+      await deleteFechamento(fechamentoId);
       return true;
     }
   } catch (error) {
@@ -311,6 +310,7 @@ export async function reabrirCaixa(fechamentoId: string): Promise<boolean> {
     return false;
   }
 }
+
 
 
 

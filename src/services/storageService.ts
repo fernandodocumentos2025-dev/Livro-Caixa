@@ -227,6 +227,28 @@ export async function getUltimaAberturaAberta(): Promise<Abertura | null> {
   const aberturaAberta = aberturas.find(a => !fechamentosMap.has(a.id));
 
   if (aberturaAberta) {
+    // PASSE VIP: Se o usuário clicou explicitamente em "Reabrir Caixa",
+    // a função reabrirCaixa grava o ID da abertura no localStorage.
+    // Aqui, se o ID bater, deixamos passar mesmo sendo uma abertura antiga.
+    const reaberturaAutorizadaId = typeof window !== 'undefined'
+      ? localStorage.getItem('reaberturaAtivaId')
+      : null;
+
+    if (reaberturaAutorizadaId && aberturaAberta.id === reaberturaAutorizadaId) {
+      // Reabertura explícita autorizada — bypassar Security Check
+    } else {
+      // SECURITY CHECK: Se houver aberturas MAIS RECENTES que esta (e já fechadas),
+      // então esta abertura antiga é um "Zumbi" — ignorar para não travar a Home.
+      const aberturasMaisRecentes = aberturas.filter(a =>
+        (a.data > aberturaAberta.data) ||
+        (a.data === aberturaAberta.data && a.hora > aberturaAberta.hora)
+      );
+
+      if (aberturasMaisRecentes.length > 0) {
+        return null;
+      }
+    }
+
     // Converter data de YYYY-MM-DD para DD/MM/YYYY
     const [anoDb, mesDb, diaDb] = aberturaAberta.data.split('-');
     const dataOriginal = `${diaDb}/${mesDb}/${anoDb}`;
